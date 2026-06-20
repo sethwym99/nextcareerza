@@ -45,6 +45,14 @@ async function logUsage(supabase: any, userId: string, feature: string) {
   await supabase.from("usage_events").insert({ user_id: userId, feature });
 }
 
+async function safeLogUsage(supabase: any, userId: string, feature: string) {
+  try {
+    await logUsage(supabase, userId, feature);
+  } catch (error) {
+    console.warn("Usage logging failed", { feature, error });
+  }
+}
+
 const MODEL = "google/gemini-3-flash-preview";
 
 function parseJsonObject<T>(text: string): T | null {
