@@ -9,9 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
+import { Route as AuthenticatedTrackerRouteImport } from './routes/_authenticated.tracker'
+import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated.roadmap'
+import { Route as AuthenticatedJobMatchRouteImport } from './routes/_authenticated.job-match'
+import { Route as AuthenticatedInterviewRouteImport } from './routes/_authenticated.interview'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedCvBuilderRouteImport } from './routes/_authenticated.cv-builder'
+import { Route as AuthenticatedCoverLetterRouteImport } from './routes/_authenticated.cover-letter'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -22,35 +40,144 @@ const ApiInterviewRoute = ApiInterviewRouteImport.update({
   path: '/api/interview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTrackerRoute = AuthenticatedTrackerRouteImport.update({
+  id: '/tracker',
+  path: '/tracker',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRoadmapRoute = AuthenticatedRoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedJobMatchRoute = AuthenticatedJobMatchRouteImport.update({
+  id: '/job-match',
+  path: '/job-match',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedInterviewRoute = AuthenticatedInterviewRouteImport.update({
+  id: '/interview',
+  path: '/interview',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCvBuilderRoute = AuthenticatedCvBuilderRouteImport.update({
+  id: '/cv-builder',
+  path: '/cv-builder',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCoverLetterRoute =
+  AuthenticatedCoverLetterRouteImport.update({
+    id: '/cover-letter',
+    path: '/cover-letter',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/cover-letter': typeof AuthenticatedCoverLetterRoute
+  '/cv-builder': typeof AuthenticatedCvBuilderRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/interview': typeof AuthenticatedInterviewRoute
+  '/job-match': typeof AuthenticatedJobMatchRoute
+  '/roadmap': typeof AuthenticatedRoadmapRoute
+  '/tracker': typeof AuthenticatedTrackerRoute
   '/api/interview': typeof ApiInterviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/cover-letter': typeof AuthenticatedCoverLetterRoute
+  '/cv-builder': typeof AuthenticatedCvBuilderRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/interview': typeof AuthenticatedInterviewRoute
+  '/job-match': typeof AuthenticatedJobMatchRoute
+  '/roadmap': typeof AuthenticatedRoadmapRoute
+  '/tracker': typeof AuthenticatedTrackerRoute
   '/api/interview': typeof ApiInterviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/cover-letter': typeof AuthenticatedCoverLetterRoute
+  '/_authenticated/cv-builder': typeof AuthenticatedCvBuilderRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/interview': typeof AuthenticatedInterviewRoute
+  '/_authenticated/job-match': typeof AuthenticatedJobMatchRoute
+  '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
+  '/_authenticated/tracker': typeof AuthenticatedTrackerRoute
   '/api/interview': typeof ApiInterviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/interview'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/cover-letter'
+    | '/cv-builder'
+    | '/dashboard'
+    | '/interview'
+    | '/job-match'
+    | '/roadmap'
+    | '/tracker'
+    | '/api/interview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/interview'
-  id: '__root__' | '/' | '/api/interview'
+  to:
+    | '/'
+    | '/auth'
+    | '/cover-letter'
+    | '/cv-builder'
+    | '/dashboard'
+    | '/interview'
+    | '/job-match'
+    | '/roadmap'
+    | '/tracker'
+    | '/api/interview'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/cover-letter'
+    | '/_authenticated/cv-builder'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/interview'
+    | '/_authenticated/job-match'
+    | '/_authenticated/roadmap'
+    | '/_authenticated/tracker'
+    | '/api/interview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ApiInterviewRoute: typeof ApiInterviewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,11 +192,86 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInterviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tracker': {
+      id: '/_authenticated/tracker'
+      path: '/tracker'
+      fullPath: '/tracker'
+      preLoaderRoute: typeof AuthenticatedTrackerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/roadmap': {
+      id: '/_authenticated/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof AuthenticatedRoadmapRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/job-match': {
+      id: '/_authenticated/job-match'
+      path: '/job-match'
+      fullPath: '/job-match'
+      preLoaderRoute: typeof AuthenticatedJobMatchRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview': {
+      id: '/_authenticated/interview'
+      path: '/interview'
+      fullPath: '/interview'
+      preLoaderRoute: typeof AuthenticatedInterviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/cv-builder': {
+      id: '/_authenticated/cv-builder'
+      path: '/cv-builder'
+      fullPath: '/cv-builder'
+      preLoaderRoute: typeof AuthenticatedCvBuilderRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/cover-letter': {
+      id: '/_authenticated/cover-letter'
+      path: '/cover-letter'
+      fullPath: '/cover-letter'
+      preLoaderRoute: typeof AuthenticatedCoverLetterRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedCoverLetterRoute: typeof AuthenticatedCoverLetterRoute
+  AuthenticatedCvBuilderRoute: typeof AuthenticatedCvBuilderRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInterviewRoute: typeof AuthenticatedInterviewRoute
+  AuthenticatedJobMatchRoute: typeof AuthenticatedJobMatchRoute
+  AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
+  AuthenticatedTrackerRoute: typeof AuthenticatedTrackerRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedCoverLetterRoute: AuthenticatedCoverLetterRoute,
+  AuthenticatedCvBuilderRoute: AuthenticatedCvBuilderRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInterviewRoute: AuthenticatedInterviewRoute,
+  AuthenticatedJobMatchRoute: AuthenticatedJobMatchRoute,
+  AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
+  AuthenticatedTrackerRoute: AuthenticatedTrackerRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
   ApiInterviewRoute: ApiInterviewRoute,
 }
 export const routeTree = rootRouteImport
