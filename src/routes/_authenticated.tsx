@@ -112,8 +112,9 @@ function AuthedLayout() {
           <div className="w-9" />
         </header>
         <main className="p-5 md:p-8 max-w-6xl mx-auto">
-          <Outlet />
+          {showPaywall ? <Paywall /> : <Outlet />}
         </main>
+
       </div>
     </div>
   );
