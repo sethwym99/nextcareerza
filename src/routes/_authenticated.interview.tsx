@@ -307,7 +307,9 @@ function Page() {
     form.append("file", blob, `answer.${audioExtension(blob.type)}`);
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     if (!res.ok || !res.body) {
-      throw new Error(await res.text().catch(() => `Transcription ${res.status}`));
+      throw new Error(
+        await res.text().catch(() => `Transcription ${res.status}`),
+      );
     }
 
     let text = "";
