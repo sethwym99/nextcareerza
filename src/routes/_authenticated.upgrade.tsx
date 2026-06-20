@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
-  head: () => ({ meta: [{ title: "Upgrade to Premium — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Upgrade to Premium — NextCareer" }] }),
   component: Upgrade,
 });
 
@@ -29,7 +29,7 @@ function Upgrade() {
           <input type="hidden" name="receiver" value={RECEIVER} />
           <input type="hidden" name="notify_url" value={NOTIFY_URL} />
           <input type="hidden" name="amount" value="99" />
-          <input type="hidden" name="item_name" value="NextHire Premium" />
+          <input type="hidden" name="item_name" value="NextCareer Premium" />
           <input type="hidden" name="subscription_type" value="1" />
           <input type="hidden" name="recurring_amount" value="99" />
           <input type="hidden" name="cycles" value="0" />

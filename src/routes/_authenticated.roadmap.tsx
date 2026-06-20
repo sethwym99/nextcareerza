@@ -9,7 +9,7 @@ import { Map as MapIcon, Sparkles, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/roadmap")({
-  head: () => ({ meta: [{ title: "Career Roadmap — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Career Roadmap — NextCareer" }] }),
   component: Page,
 });
 

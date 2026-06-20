@@ -5,7 +5,7 @@ import { getUsageStatus } from "@/lib/ai.functions";
 import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Crown, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — NextCareer" }] }),
   component: Dashboard,
 });
 
