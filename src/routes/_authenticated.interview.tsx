@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, MicOff, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
+import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { createParser } from "eventsource-parser";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
@@ -16,8 +16,46 @@ export const Route = createFileRoute("/_authenticated/interview")({
 
 type Msg = { role: "interviewer" | "candidate"; text: string };
 type Phase = "setup" | "loading" | "ai-speaking" | "listening" | "thinking" | "done";
+type FocusStatus = "ready" | "face-missing" | "head-away" | "eyes-away";
 
 const MAX_QUESTIONS = 6;
+const AUDIO_TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+
+function getRecordingMimeType() {
+  if (typeof MediaRecorder === "undefined") return "";
+  return AUDIO_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
+}
+
+function audioExtension(type: string) {
+  const mime = type.split(";")[0];
+  if (mime === "audio/mp4") return "mp4";
+  if (mime === "audio/mpeg") return "mp3";
+  if (mime === "audio/wav") return "wav";
+  return "webm";
+}
+
+type Landmark = { x: number; y: number; z?: number };
+
+function irisAway(landmarks: Landmark[], iris: number[], outer: number, inner: number, upper: number, lower: number) {
+  if (!landmarks[iris[0]] || !landmarks[outer] || !landmarks[inner] || !landmarks[upper] || !landmarks[lower]) return false;
+  const center = iris.reduce(
+    (sum, index) => ({ x: sum.x + landmarks[index].x / iris.length, y: sum.y + landmarks[index].y / iris.length }),
+    { x: 0, y: 0 },
+  );
+  const minX = Math.min(landmarks[outer].x, landmarks[inner].x);
+  const maxX = Math.max(landmarks[outer].x, landmarks[inner].x);
+  const minY = Math.min(landmarks[upper].y, landmarks[lower].y);
+  const maxY = Math.max(landmarks[upper].y, landmarks[lower].y);
+  const horizontal = (center.x - minX) / Math.max(0.001, maxX - minX);
+  const vertical = (center.y - minY) / Math.max(0.001, maxY - minY);
+  return horizontal < 0.2 || horizontal > 0.8 || vertical < -0.35 || vertical > 1.35;
+}
+
+function eyesAway(landmarks: Landmark[]) {
+  const leftAway = irisAway(landmarks, [468, 469, 470, 471, 472], 33, 133, 159, 145);
+  const rightAway = irisAway(landmarks, [473, 474, 475, 476, 477], 362, 263, 386, 374);
+  return leftAway && rightAway;
+}
 
 function Page() {
   const startFn = useServerFn(startInterviewSession);
@@ -29,35 +67,63 @@ function Page() {
   const [liveTranscript, setLiveTranscript] = useState("");
   const [lookAwayCount, setLookAwayCount] = useState(0);
   const [faceVisible, setFaceVisible] = useState(true);
+  const [focusStatus, setFocusStatus] = useState<FocusStatus>("ready");
   const [report, setReport] = useState<any>(null);
   const [cameraOn, setCameraOn] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const rafRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioPlayheadRef = useRef(0);
-  const recognitionRef = useRef<any>(null);
-  const isListeningRef = useRef(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const stopAnswerRef = useRef<(() => void) | null>(null);
   const lookingAwayRef = useRef(false);
   const awayStartRef = useRef<number>(0);
   const trackDuringAnswerRef = useRef(false);
+  const focusStatusRef = useRef<FocusStatus>("ready");
   const phaseRef = useRef<Phase>("setup");
+  const lookAwayCountRef = useRef(0);
 
   useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => { lookAwayCountRef.current = lookAwayCount; }, [lookAwayCount]);
 
   // Cleanup
   useEffect(() => () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     audioCtxRef.current?.close().catch(() => {});
-    try { recognitionRef.current?.stop(); } catch {}
+    try { recorderRef.current?.stop(); } catch {}
   }, []);
 
+  function setFocus(status: FocusStatus) {
+    if (focusStatusRef.current === status) return;
+    focusStatusRef.current = status;
+    setFocusStatus(status);
+  }
+
+  function countLookAway() {
+    lookAwayCountRef.current += 1;
+    setLookAwayCount(lookAwayCountRef.current);
+  }
+
+  function finishFocusSegment(ts = performance.now()) {
+    if (!lookingAwayRef.current) return;
+    lookingAwayRef.current = false;
+    if (ts - awayStartRef.current > 900) countLookAway();
+  }
+
   async function initCameraAndFace() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 }, audio: false });
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera and microphone are not available in this browser.");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
     streamRef.current = stream;
+    micStreamRef.current = new MediaStream(stream.getAudioTracks());
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       await videoRef.current.play().catch(() => {});
@@ -67,16 +133,24 @@ function Page() {
     const filesetResolver = await FilesetResolver.forVisionTasks(
       "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm",
     );
-    landmarkerRef.current = await FaceLandmarker.createFromOptions(filesetResolver, {
+    const options = {
       baseOptions: {
         modelAssetPath:
           "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-        delegate: "GPU",
+        delegate: "GPU" as const,
       },
-      runningMode: "VIDEO",
+      runningMode: "VIDEO" as const,
       outputFacialTransformationMatrixes: true,
       numFaces: 1,
-    });
+    };
+    try {
+      landmarkerRef.current = await FaceLandmarker.createFromOptions(filesetResolver, options);
+    } catch {
+      landmarkerRef.current = await FaceLandmarker.createFromOptions(filesetResolver, {
+        ...options,
+        baseOptions: { ...options.baseOptions, delegate: "CPU" as const },
+      });
+    }
     loop();
   }
 
@@ -89,27 +163,26 @@ function Page() {
         try {
           const res = lm.detectForVideo(video, ts);
           const hasFace = res.faceLandmarks && res.faceLandmarks.length > 0;
-          setFaceVisible(!!hasFace);
-          let isAway = !hasFace;
+          let status: FocusStatus = hasFace ? "ready" : "face-missing";
           if (hasFace && res.facialTransformationMatrixes?.[0]) {
             const m = res.facialTransformationMatrixes[0].data;
-            // Extract yaw (rotation around Y) and pitch (rotation around X)
             const yaw = Math.atan2(m[8], m[10]) * (180 / Math.PI);
             const pitch = Math.atan2(-m[9], Math.sqrt(m[1] ** 2 + m[5] ** 2)) * (180 / Math.PI);
-            if (Math.abs(yaw) > 22 || Math.abs(pitch) > 22) isAway = true;
+            if (Math.abs(yaw) > 20 || Math.abs(pitch) > 18) status = "head-away";
+            else if (res.faceLandmarks?.[0] && eyesAway(res.faceLandmarks[0] as Landmark[])) status = "eyes-away";
           }
-          // Only count look-aways while user is answering
+          setFaceVisible(status !== "face-missing");
+          setFocus(status);
+          const isAway = status !== "ready";
           if (trackDuringAnswerRef.current) {
             if (isAway && !lookingAwayRef.current) {
               lookingAwayRef.current = true;
               awayStartRef.current = ts;
             } else if (!isAway && lookingAwayRef.current) {
-              lookingAwayRef.current = false;
-              const duration = ts - awayStartRef.current;
-              if (duration > 1200) {
-                setLookAwayCount((c) => c + 1);
-              }
+              finishFocusSegment(ts);
             }
+          } else {
+            finishFocusSegment(ts);
           }
         } catch {}
       }
@@ -176,45 +249,126 @@ function Page() {
     if (remaining > 0) await new Promise((r) => setTimeout(r, remaining * 1000));
   }
 
+  async function transcribeAnswer(blob: Blob) {
+    const form = new FormData();
+    form.append("file", blob, `answer.${audioExtension(blob.type)}`);
+    const res = await fetch("/api/transcribe", { method: "POST", body: form });
+    if (!res.ok || !res.body) throw new Error(await res.text().catch(() => `Transcription ${res.status}`));
+
+    let text = "";
+    const parser = createParser({
+      onEvent(event) {
+        let payload: { type: string; delta?: string; text?: string };
+        try { payload = JSON.parse(event.data); } catch { return; }
+        if (payload.type === "transcript.text.delta" && payload.delta) {
+          text += payload.delta;
+          setLiveTranscript(text.trim());
+        }
+        if (payload.type === "transcript.text.done" && typeof payload.text === "string") {
+          text = payload.text;
+          setLiveTranscript(text.trim());
+        }
+      },
+    });
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      parser.feed(value);
+    }
+    return text.trim();
+  }
+
   function startListening(): Promise<string> {
     return new Promise((resolve, reject) => {
-      const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SR) { reject(new Error("Speech recognition not supported. Use Chrome.")); return; }
-      const rec = new SR();
-      recognitionRef.current = rec;
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.lang = "en-US";
-      let finalText = "";
-      let silenceTimer: ReturnType<typeof setTimeout> | null = null;
-      const resetSilence = () => {
-        if (silenceTimer) clearTimeout(silenceTimer);
-        silenceTimer = setTimeout(() => { try { rec.stop(); } catch {} }, 2800);
-      };
-      rec.onresult = (e: any) => {
-        let interim = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          if (r.isFinal) finalText += r[0].transcript + " ";
-          else interim += r[0].transcript;
-        }
-        setLiveTranscript((finalText + interim).trim());
-        resetSilence();
-      };
-      rec.onerror = (e: any) => {
-        if (e.error === "no-speech" || e.error === "aborted") return;
-        reject(new Error(e.error || "recognition error"));
-      };
-      rec.onend = () => {
-        if (silenceTimer) clearTimeout(silenceTimer);
-        isListeningRef.current = false;
+      const micStream = micStreamRef.current;
+      const mimeType = getRecordingMimeType();
+      if (!micStream?.getAudioTracks().length) { reject(new Error("Microphone was not started.")); return; }
+      if (!mimeType) { reject(new Error("This browser cannot record supported interview audio.")); return; }
+
+      const chunks: Blob[] = [];
+      let recorder: MediaRecorder;
+      let meterRaf: number | null = null;
+      let settled = false;
+      let heardSpeech = false;
+      let lastSoundAt = performance.now();
+      let recorderStartedAt = performance.now();
+      const meterCtx = audioCtxRef.current ?? new AudioContext();
+      if (meterCtx.state === "suspended") meterCtx.resume().catch(() => {});
+      const analyser = meterCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      meterCtx.createMediaStreamSource(micStream).connect(analyser);
+      const samples = new Uint8Array(analyser.fftSize);
+
+      const cleanup = () => {
+        if (meterRaf) cancelAnimationFrame(meterRaf);
+        stopAnswerRef.current = null;
+        recorderRef.current = null;
         trackDuringAnswerRef.current = false;
-        resolve(finalText.trim());
+        finishFocusSegment();
+        if (meterCtx !== audioCtxRef.current) meterCtx.close().catch(() => {});
       };
-      isListeningRef.current = true;
+      const stopRecorder = () => {
+        if (recorder.state !== "inactive") recorder.stop();
+      };
+
+      try {
+        recorder = new MediaRecorder(micStream, { mimeType });
+      } catch (error: any) {
+        cleanup();
+        reject(new Error(error?.message || "Could not start microphone recording."));
+        return;
+      }
+
+      recorderRef.current = recorder;
+      stopAnswerRef.current = stopRecorder;
       trackDuringAnswerRef.current = true;
-      rec.start();
-      resetSilence();
+      recorder.ondataavailable = (event) => event.data.size > 0 && chunks.push(event.data);
+      recorder.onerror = () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error("Microphone recording failed."));
+      };
+      recorder.onstop = async () => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        const blob = new Blob(chunks, { type: recorder.mimeType || mimeType });
+        if (!heardSpeech || blob.size < 1200) { resolve(""); return; }
+        try {
+          setLiveTranscript("Transcribing answer…");
+          resolve(await transcribeAnswer(blob));
+        } catch (error: any) {
+          reject(error);
+        }
+      };
+
+      const meter = () => {
+        analyser.getByteTimeDomainData(samples);
+        let total = 0;
+        for (const sample of samples) {
+          const centered = (sample - 128) / 128;
+          total += centered * centered;
+        }
+        const volume = Math.sqrt(total / samples.length);
+        const now = performance.now();
+        if (volume > 0.018) {
+          heardSpeech = true;
+          lastSoundAt = now;
+          setLiveTranscript("Recording your answer…");
+        }
+        if ((heardSpeech && now - lastSoundAt > 2600) || (!heardSpeech && now - recorderStartedAt > 16000) || now - recorderStartedAt > 90000) {
+          stopRecorder();
+          return;
+        }
+        meterRaf = requestAnimationFrame(meter);
+      };
+
+      recorder.start(250);
+      recorderStartedAt = performance.now();
+      setLiveTranscript("Listening…");
+      meterRaf = requestAnimationFrame(meter);
     });
   }
 
@@ -248,10 +402,6 @@ function Page() {
     setPhase("done");
   }
 
-  // keep a ref for lookAwayCount so the async loop reads the latest value
-  const lookAwayCountRef = useRef(0);
-  useEffect(() => { lookAwayCountRef.current = lookAwayCount; }, [lookAwayCount]);
-
   async function begin() {
     if (role.trim().length < 2) { toast.error("Enter the role you want to practice"); return; }
     // Create the AudioContext synchronously inside the click handler so the
@@ -262,8 +412,8 @@ function Page() {
     }
     setPhase("loading");
     try {
-      await startFn({ data: { role } });
       await initCameraAndFace();
+      await startFn({ data: { role } });
       await runConversation(role);
     } catch (e: any) {
       toast.error(e.message || "Could not start interview");
@@ -272,10 +422,14 @@ function Page() {
   }
 
   function stopAll() {
-    try { recognitionRef.current?.stop(); } catch {}
+    try { stopAnswerRef.current?.(); } catch {}
     streamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+    streamRef.current = null;
+    micStreamRef.current = null;
     setCameraOn(false);
   }
 
@@ -284,6 +438,8 @@ function Page() {
     setMessages([]);
     setLiveTranscript("");
     setLookAwayCount(0);
+    lookAwayCountRef.current = 0;
+    setFocus("ready");
     setReport(null);
     setPhase("setup");
   }
