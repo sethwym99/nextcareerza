@@ -30,9 +30,7 @@ function Landing() {
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/60 border-b border-border">
         <div className="mx-auto max-w-7xl px-5 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-display font-bold text-lg">
-            <span className="inline-grid place-items-center h-8 w-8 rounded-lg bg-[image:var(--gradient-primary)] shadow-[0_0_20px_-2px_oklch(0.62_0.22_277/0.6)]">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </span>
+            <img src="/logo.png" alt="NextCareer" className="h-8 w-8 rounded-lg shadow-[0_0_20px_-2px_oklch(0.62_0.22_277/0.6)]" />
             NextCareer
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">

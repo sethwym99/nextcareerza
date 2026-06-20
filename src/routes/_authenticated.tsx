@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Sparkles, FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check,
+  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -73,9 +73,7 @@ function AuthedLayout() {
       >
         <div className="h-16 px-5 flex items-center justify-between border-b border-border">
           <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold">
-            <span className="inline-grid place-items-center h-8 w-8 rounded-lg bg-[image:var(--gradient-primary)]">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </span>
+            <img src="/logo.png" alt="NextCareer" className="h-8 w-8 rounded-lg" />
             NextCareer
           </Link>
           <button onClick={() => setOpen(false)} className="md:hidden p-1"><X className="h-5 w-5" /></button>
@@ -109,7 +107,10 @@ function AuthedLayout() {
       <div className="flex-1 min-w-0">
         <header className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-between bg-background/80 backdrop-blur-xl border-b border-border">
           <button onClick={() => setOpen(true)} className="p-2"><Menu className="h-5 w-5" /></button>
-          <Link to="/dashboard" className="font-display font-bold">NextCareer</Link>
+          <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold">
+            <img src="/logo.png" alt="NextCareer" className="h-7 w-7 rounded-lg" />
+            NextCareer
+          </Link>
           <div className="w-9" />
         </header>
         <main className="p-5 md:p-8 max-w-6xl mx-auto">
