@@ -44,7 +44,7 @@ function Dashboard() {
         <div className="grid sm:grid-cols-3 gap-3">
           <UsageCard label="CV analyses" used={cv} limit={limit} />
           <UsageCard label="Interview sessions" used={interview} limit={limit} />
-          <Link to="/dashboard" className="glass-card rounded-2xl p-4 bg-[image:var(--gradient-primary)] !border-0 flex items-center gap-3">
+          <Link to="/upgrade" className="glass-card rounded-2xl p-4 bg-[image:var(--gradient-primary)] !border-0 flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-primary-foreground" />
             <div className="text-sm text-primary-foreground">
               <div className="font-semibold">Go Premium — R99/mo</div>
