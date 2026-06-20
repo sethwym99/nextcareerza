@@ -28,6 +28,8 @@ function AuthedLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<string | null>(null);
+  const [planLoading, setPlanLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -35,9 +37,32 @@ function AuthedLayout() {
 
   useEffect(() => setOpen(false), [location.pathname]);
 
+  useEffect(() => {
+    if (!session?.user) return;
+    let cancelled = false;
+    setPlanLoading(true);
+    supabase
+      .from("profiles")
+      .select("plan")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) {
+          setPlan(data?.plan ?? "free");
+          setPlanLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [session?.user?.id, location.pathname]);
+
   if (loading || !session) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
   }
+
+  const isPremium = plan === "premium";
+  const pathAllowed = FREE_ALLOWED.some((p) => location.pathname.startsWith(p));
+  const showPaywall = !planLoading && !isPremium && !pathAllowed;
+
 
   return (
     <div className="min-h-screen flex">
