@@ -309,7 +309,11 @@ function Page() {
     const parser = createParser({
       onEvent(event) {
         let payload: { type: string; delta?: string; text?: string };
-        try { payload = JSON.parse(event.data); } catch { return; }
+        try {
+          payload = JSON.parse(event.data);
+        } catch {
+          return;
+        }
         if (payload.type === "transcript.text.delta" && payload.delta) {
           text += payload.delta;
           setLiveTranscript(text.trim());
@@ -333,8 +337,14 @@ function Page() {
     return new Promise((resolve, reject) => {
       const micStream = micStreamRef.current;
       const mimeType = getRecordingMimeType();
-      if (!micStream?.getAudioTracks().length) { reject(new Error("Microphone was not started.")); return; }
-      if (!mimeType) { reject(new Error("This browser cannot record supported interview audio.")); return; }
+      if (!micStream?.getAudioTracks().length) {
+        reject(new Error("Microphone was not started."));
+        return;
+      }
+      if (!mimeType) {
+        reject(new Error("This browser cannot record supported interview audio."));
+        return;
+      }
 
       const chunks: Blob[] = [];
       let recorder: MediaRecorder;
@@ -364,9 +374,9 @@ function Page() {
 
       try {
         recorder = new MediaRecorder(micStream, { mimeType });
-      } catch (error: any) {
+      } catch (error: unknown) {
         cleanup();
-        reject(new Error(error?.message || "Could not start microphone recording."));
+        reject(new Error(errorMessage(error, "Could not start microphone recording.")));
         return;
       }
 
@@ -385,11 +395,14 @@ function Page() {
         settled = true;
         cleanup();
         const blob = new Blob(chunks, { type: recorder.mimeType || mimeType });
-        if (!heardSpeech || blob.size < 1200) { resolve(""); return; }
+        if (!heardSpeech || blob.size < 1200) {
+          resolve("");
+          return;
+        }
         try {
           setLiveTranscript("Transcribing answer…");
           resolve(await transcribeAnswer(blob));
-        } catch (error: any) {
+        } catch (error: unknown) {
           reject(error);
         }
       };
