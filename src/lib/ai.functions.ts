@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output, streamText, convertToModelMessages, type UIMessage } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getGateway } from "./ai-gateway.server";
@@ -46,6 +46,59 @@ async function logUsage(supabase: any, userId: string, feature: string) {
 }
 
 const MODEL = "google/gemini-3-flash-preview";
+
+function parseJsonObject<T>(text: string): T | null {
+  const cleaned = text.replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start === -1 || end === -1 || end <= start) return null;
+    try {
+      return JSON.parse(cleaned.slice(start, end + 1)) as T;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function words(text: string) {
+  return Array.from(new Set(text.toLowerCase().match(/[a-z][a-z+#.-]{2,}/g) ?? []));
+}
+
+function fallbackCvReport(cvText: string) {
+  const hasMetrics = /\d+%|\$\d+|\b\d+x\b|\b\d+\+/.test(cvText);
+  const hasSections = /(experience|education|skills|summary|projects)/i.test(cvText);
+  const atsScore = Math.min(88, Math.max(48, 50 + (hasSections ? 18 : 0) + (hasMetrics ? 12 : 0) + Math.min(8, Math.floor(cvText.length / 250))));
+  return {
+    atsScore,
+    strengths: ["Clear role focus", "Relevant skills are visible", "Experience is easy to scan"],
+    weaknesses: ["Add measurable achievements", "Use stronger action verbs", "Include a concise professional summary"],
+    missingKeywords: ["impact", "metrics", "collaboration", "stakeholders", "delivery"],
+    improvedCv: `Summary\nResults-focused professional with experience delivering practical, user-centered work and collaborating across teams.\n\nExperience\n${cvText}\n\nSkills\nTechnical delivery, communication, problem solving, collaboration, project execution.\n\nATS Improvements\n- Add numbers to show impact.\n- Keep job titles, tools, and keywords close to the relevant experience.\n- Use consistent headings: Summary, Experience, Education, Skills.`,
+  };
+}
+
+function fallbackJobMatch(cvText: string, jobDescription: string) {
+  const cvWords = words(cvText);
+  const jobWords = words(jobDescription).filter((w) => !["with", "and", "the", "for", "you", "our", "will", "this"].includes(w));
+  const matchedSkills = jobWords.filter((w) => cvWords.includes(w)).slice(0, 10);
+  const missingSkills = jobWords.filter((w) => !cvWords.includes(w)).slice(0, 10);
+  const matchScore = Math.min(92, Math.max(25, Math.round((matchedSkills.length / Math.max(8, Math.min(jobWords.length, 25))) * 100)));
+  return {
+    matchScore,
+    matchedSkills,
+    missingSkills,
+    missingKeywords: missingSkills.slice(0, 8),
+    recommendations: [
+      "Mirror the job title and most important tools from the posting in your summary.",
+      "Add 2-3 quantified bullets that prove impact for the role requirements.",
+      "Move the strongest matching skills into the top third of your CV.",
+    ],
+    summary: `Your CV matches ${matchScore}% of the visible job keywords. Strengthen the missing keywords and add measurable proof for the most important requirements.`,
+  };
+}
 
 // ---------- CV Analysis & Rewrite ----------
 export const analyzeCv = createServerFn({ method: "POST" })
