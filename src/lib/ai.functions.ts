@@ -216,6 +216,69 @@ export const startInterviewSession = createServerFn({ method: "POST" })
     return { ok: true, role: data.role };
   });
 
+// ---------- Voice Interview Turn ----------
+type InterviewTurnMessage = { role: "interviewer" | "candidate"; text: string };
+
+export const interviewTurn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      role: z.string().min(2),
+      history: z.array(z.object({ role: z.enum(["interviewer", "candidate"]), text: z.string() })),
+      lookAwayCount: z.number().int().min(0).default(0),
+      finalize: z.boolean().default(false),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const gateway = getGateway();
+    const transcript = data.history.map((m) => `${m.role.toUpperCase()}: ${m.text}`).join("\n");
+
+    if (data.finalize) {
+      const { text } = await generateText({
+        model: gateway(MODEL),
+        system:
+          "You are a senior hiring manager scoring a mock interview. Return ONLY valid JSON (no fences) with keys: score number 0-100, verdict string (one short sentence), strengths string array, improvements string array, redFlags string array, summary string. Consider answer quality, structure (STAR), specificity, and the candidate's focus signal.",
+        prompt: `Role: ${data.role}\nLook-away events during answers: ${data.lookAwayCount} (higher means the candidate may have been reading off-screen).\n\nTranscript:\n${transcript}`,
+      });
+      const parsed = parseJsonObject<{
+        score: number;
+        verdict: string;
+        strengths: string[];
+        improvements: string[];
+        redFlags: string[];
+        summary: string;
+      }>(text);
+      return {
+        kind: "final" as const,
+        report: parsed ?? {
+          score: 60,
+          verdict: "Solid effort with room to grow.",
+          strengths: ["Engaged with the questions", "Tried to give concrete examples"],
+          improvements: ["Add measurable results", "Use the STAR structure", "Speak with more confidence"],
+          redFlags: data.lookAwayCount > 6 ? ["Frequently looked off-screen — may have been reading"] : [],
+          summary: "Overall a reasonable interview. Tighten structure and add quantified impact for stronger results.",
+        },
+      };
+    }
+
+    const questionNumber = data.history.filter((m) => m.role === "interviewer").length + 1;
+    const { text } = await generateText({
+      model: gateway(MODEL),
+      system:
+        `You are a friendly but sharp hiring manager conducting a SPOKEN mock interview for a ${data.role} role. ` +
+        `Return ONLY valid JSON (no markdown fences) with keys: feedback string (1 short sentence on the previous answer, empty string if this is question 1), question string (the NEXT single question, conversational, max 35 words, no numbering). ` +
+        `Mix behavioral, technical, and situational questions. Keep it natural, like a real conversation.`,
+      prompt: `This will be question #${questionNumber} of about 6.\nLook-away events so far: ${data.lookAwayCount}.\n\nConversation so far:\n${transcript || "(none yet — ask your first question)"}`,
+    });
+    const parsed = parseJsonObject<{ feedback: string; question: string }>(text);
+    return {
+      kind: "turn" as const,
+      feedback: parsed?.feedback ?? "",
+      question: parsed?.question ?? `Tell me about a recent challenge you faced as a ${data.role} and how you handled it.`,
+      questionNumber,
+    };
+  });
+
 // ---------- Usage status ----------
 export const getUsageStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
