@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateRoadmap } from "@/lib/ai.functions";
-import { Map, Sparkles, CheckCircle2 } from "lucide-react";
+import { Map as MapIcon, Sparkles, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/roadmap")({
@@ -32,7 +32,7 @@ function Page() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold flex items-center gap-3"><Map className="h-7 w-7 text-primary-glow" /> Career Roadmap</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-3"><MapIcon className="h-7 w-7 text-primary-glow" /> Career Roadmap</h1>
         <p className="text-muted-foreground mt-1">Tell us where you want to go. We'll plan the route.</p>
       </header>
 
