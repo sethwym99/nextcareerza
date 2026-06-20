@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
+import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated.upgrade'
 import { Route as AuthenticatedTrackerRouteImport } from './routes/_authenticated.tracker'
 import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated.roadmap'
 import { Route as AuthenticatedJobMatchRouteImport } from './routes/_authenticated.job-match'
@@ -40,6 +41,11 @@ const ApiInterviewRoute = ApiInterviewRouteImport.update({
   id: '/api/interview',
   path: '/api/interview',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
+  id: '/upgrade',
+  path: '/upgrade',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTrackerRoute = AuthenticatedTrackerRouteImport.update({
   id: '/tracker',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/job-match': typeof AuthenticatedJobMatchRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/tracker': typeof AuthenticatedTrackerRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/job-match': typeof AuthenticatedJobMatchRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/tracker': typeof AuthenticatedTrackerRoute
+  '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/job-match': typeof AuthenticatedJobMatchRoute
   '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
   '/_authenticated/tracker': typeof AuthenticatedTrackerRoute
+  '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/job-match'
     | '/roadmap'
     | '/tracker'
+    | '/upgrade'
     | '/api/interview'
     | '/api/public/payments'
   fileRoutesByTo: FileRoutesByTo
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/job-match'
     | '/roadmap'
     | '/tracker'
+    | '/upgrade'
     | '/api/interview'
     | '/api/public/payments'
   id:
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_authenticated/job-match'
     | '/_authenticated/roadmap'
     | '/_authenticated/tracker'
+    | '/_authenticated/upgrade'
     | '/api/interview'
     | '/api/public/payments'
   fileRoutesById: FileRoutesById
@@ -204,6 +216,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/interview'
       preLoaderRoute: typeof ApiInterviewRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/upgrade': {
+      id: '/_authenticated/upgrade'
+      path: '/upgrade'
+      fullPath: '/upgrade'
+      preLoaderRoute: typeof AuthenticatedUpgradeRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tracker': {
       id: '/_authenticated/tracker'
@@ -272,6 +291,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedJobMatchRoute: typeof AuthenticatedJobMatchRoute
   AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
   AuthenticatedTrackerRoute: typeof AuthenticatedTrackerRoute
+  AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -282,6 +302,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedJobMatchRoute: AuthenticatedJobMatchRoute,
   AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
   AuthenticatedTrackerRoute: AuthenticatedTrackerRoute,
+  AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -298,13 +319,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
