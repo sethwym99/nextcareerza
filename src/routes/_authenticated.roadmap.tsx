@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateRoadmap } from "@/lib/ai.functions";
-import { Map, Sparkles, CheckCircle2 } from "lucide-react";
+import { Map as MapIcon, Sparkles, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/roadmap")({

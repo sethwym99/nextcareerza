@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getUsageStatus } from "@/lib/ai.functions";
-import { FileText, MessageSquare, Target, Mic, Map, ListChecks, Crown, Sparkles } from "lucide-react";
+import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Crown, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — NextHire" }] }),
