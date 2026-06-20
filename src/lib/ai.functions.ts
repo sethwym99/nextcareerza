@@ -121,7 +121,7 @@ export const analyzeCv = createServerFn({ method: "POST" })
         "You are an expert career coach and ATS resume reviewer. Return only valid JSON with keys: atsScore number 0-100, strengths string array, weaknesses string array, missingKeywords string array, improvedCv string. Do not use markdown fences.",
       prompt: `Analyze this CV and produce the JSON report.\n\nCV:\n${data.cvText}`,
     });
-    await logUsage(context.supabase, context.userId, "cv_analysis");
+    await safeLogUsage(context.supabase, context.userId, "cv_analysis");
     const parsed = parseJsonObject<ReturnType<typeof fallbackCvReport>>(text);
     return parsed ?? fallbackCvReport(data.cvText);
   });
@@ -144,7 +144,7 @@ export const generateCoverLetter = createServerFn({ method: "POST" })
       system: "You write tailored, ATS-friendly cover letters. Keep them ~250-350 words, specific, with strong opening and clear CTA.",
       prompt: `Tone: ${data.tone}\n\nJob description:\n${data.jobDescription}\n\nCandidate CV/notes:\n${data.cvText || "(not provided — write a generic but compelling letter)"}\n\nReturn ONLY the cover letter text.`,
     });
-    await logUsage(context.supabase, context.userId, "cover_letter");
+    await safeLogUsage(context.supabase, context.userId, "cover_letter");
     return { letter: text };
   });
 
@@ -162,7 +162,7 @@ export const jobMatchScore = createServerFn({ method: "POST" })
       system: "You match candidates to jobs. Return only valid JSON with keys: matchScore number 0-100, matchedSkills string array, missingSkills string array, missingKeywords string array, recommendations string array, summary string. Do not use markdown fences.",
       prompt: `CV:\n${data.cvText}\n\nJOB:\n${data.jobDescription}`,
     });
-    await logUsage(context.supabase, context.userId, "job_match");
+    await safeLogUsage(context.supabase, context.userId, "job_match");
     const parsed = parseJsonObject<ReturnType<typeof fallbackJobMatch>>(text);
     return parsed ?? fallbackJobMatch(data.cvText, data.jobDescription);
   });
@@ -185,7 +185,7 @@ export const generateRoadmap = createServerFn({ method: "POST" })
       system: "You are a career coach creating actionable step-by-step learning roadmaps. Return only valid JSON with keys: title string, overview string, milestones array of {month number,title string,objectives string array,resources string array,project string}, keySkills string array. Do not use markdown fences.",
       prompt: `Goal: ${data.goal}\nCurrent level: ${data.currentLevel}\nTimeframe: ${data.timeframeMonths} months`,
     });
-    await logUsage(context.supabase, context.userId, "roadmap");
+    await safeLogUsage(context.supabase, context.userId, "roadmap");
     const parsed = parseJsonObject<{
       title: string;
       overview: string;
@@ -212,7 +212,7 @@ export const startInterviewSession = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ role: z.string().min(2) }).parse(d))
   .handler(async ({ context, data }) => {
     await enforceLimit(context.supabase, context.userId, "interview_session");
-    await logUsage(context.supabase, context.userId, "interview_session");
+    await safeLogUsage(context.supabase, context.userId, "interview_session");
     return { ok: true, role: data.role };
   });
 
