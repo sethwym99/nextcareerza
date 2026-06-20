@@ -86,6 +86,13 @@ function eyesAway(landmarks: Landmark[]) {
   return leftAway && rightAway;
 }
 
+function focusLabel(status: FocusStatus) {
+  if (status === "face-missing") return "no face detected";
+  if (status === "head-away") return "head turned away";
+  if (status === "eyes-away") return "eyes off camera";
+  return "camera focused";
+}
+
 function Page() {
   const startFn = useServerFn(startInterviewSession);
   const turnFn = useServerFn(interviewTurn);
