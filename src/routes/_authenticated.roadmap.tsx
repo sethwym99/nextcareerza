@@ -32,7 +32,7 @@ function Page() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold flex items-center gap-3"><Map className="h-7 w-7 text-primary-glow" /> Career Roadmap</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-3"><MapIcon className="h-7 w-7 text-primary-glow" /> Career Roadmap</h1>
         <p className="text-muted-foreground mt-1">Tell us where you want to go. We'll plan the route.</p>
       </header>
 
