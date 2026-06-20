@@ -59,6 +59,51 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_events: {
+        Row: {
+          amount_gross: number | null
+          created_at: string
+          currency: string | null
+          email: string | null
+          id: string
+          item_name: string | null
+          m_payment_id: string | null
+          payment_status: string
+          pf_payment_id: string | null
+          provider: string
+          raw: Json
+          user_id: string | null
+        }
+        Insert: {
+          amount_gross?: number | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          id?: string
+          item_name?: string | null
+          m_payment_id?: string | null
+          payment_status: string
+          pf_payment_id?: string | null
+          provider?: string
+          raw: Json
+          user_id?: string | null
+        }
+        Update: {
+          amount_gross?: number | null
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          id?: string
+          item_name?: string | null
+          m_payment_id?: string | null
+          payment_status?: string
+          pf_payment_id?: string | null
+          provider?: string
+          raw?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
