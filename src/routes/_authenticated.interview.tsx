@@ -229,7 +229,9 @@ function Page() {
       convo = [...convo, { role: "interviewer", text: turn.question }];
       setMessages([...convo]);
       setPhase("ai-speaking");
+      trackDuringAnswerRef.current = true; // also watch eyes while AI speaks
       try { await speak(spoken); } catch (e: any) { toast.error(e.message || "Voice failed"); }
+      trackDuringAnswerRef.current = false;
       setPhase("listening");
       setLiveTranscript("");
       let answer = "";
