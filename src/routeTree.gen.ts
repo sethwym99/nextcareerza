@@ -20,6 +20,7 @@ import { Route as AuthenticatedInterviewRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCvBuilderRouteImport } from './routes/_authenticated.cv-builder'
 import { Route as AuthenticatedCoverLetterRouteImport } from './routes/_authenticated.cover-letter'
+import { Route as ApiPublicPaymentsRouteImport } from './routes/api/public/payments'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -76,6 +77,11 @@ const AuthenticatedCoverLetterRoute =
     path: '/cover-letter',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiPublicPaymentsRoute = ApiPublicPaymentsRouteImport.update({
+  id: '/api/public/payments',
+  path: '/api/public/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/tracker': typeof AuthenticatedTrackerRoute
   '/api/interview': typeof ApiInterviewRoute
+  '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/tracker': typeof AuthenticatedTrackerRoute
   '/api/interview': typeof ApiInterviewRoute
+  '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
   '/_authenticated/tracker': typeof AuthenticatedTrackerRoute
   '/api/interview': typeof ApiInterviewRoute
+  '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/tracker'
     | '/api/interview'
+    | '/api/public/payments'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/roadmap'
     | '/tracker'
     | '/api/interview'
+    | '/api/public/payments'
   id:
     | '__root__'
     | '/'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/_authenticated/roadmap'
     | '/_authenticated/tracker'
     | '/api/interview'
+    | '/api/public/payments'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -160,6 +172,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiInterviewRoute: typeof ApiInterviewRoute
+  ApiPublicPaymentsRoute: typeof ApiPublicPaymentsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCoverLetterRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/payments': {
+      id: '/api/public/payments'
+      path: '/api/public/payments'
+      fullPath: '/api/public/payments'
+      preLoaderRoute: typeof ApiPublicPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiInterviewRoute: ApiInterviewRoute,
+  ApiPublicPaymentsRoute: ApiPublicPaymentsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
