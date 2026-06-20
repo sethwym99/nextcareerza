@@ -19,7 +19,7 @@ const features = [
   { icon: MessageSquare, title: "Cover Letters", desc: "Paste a job description. Get a tailored letter in seconds.", to: "/cover-letter" as const },
   { icon: Target, title: "Job Match Score", desc: "See how well your CV fits any posting — with missing keywords.", to: "/job-match" as const },
   { icon: Mic, title: "Interview Simulator", desc: "Realistic AI interviews with instant, honest feedback.", to: "/interview" as const },
-  { icon: Map, title: "Career Roadmap", desc: "Tell us your goal. Get a step-by-step plan with resources.", to: "/roadmap" as const },
+  { icon: MapIcon, title: "Career Roadmap", desc: "Tell us your goal. Get a step-by-step plan with resources.", to: "/roadmap" as const },
   { icon: ListChecks, title: "Application Tracker", desc: "Track every application, interview, and follow-up.", to: "/tracker" as const },
 ];
 
