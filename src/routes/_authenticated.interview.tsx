@@ -229,7 +229,9 @@ function Page() {
       convo = [...convo, { role: "interviewer", text: turn.question }];
       setMessages([...convo]);
       setPhase("ai-speaking");
+      trackDuringAnswerRef.current = true; // also watch eyes while AI speaks
       try { await speak(spoken); } catch (e: any) { toast.error(e.message || "Voice failed"); }
+      trackDuringAnswerRef.current = false;
       setPhase("listening");
       setLiveTranscript("");
       let answer = "";
@@ -252,6 +254,12 @@ function Page() {
 
   async function begin() {
     if (role.trim().length < 2) { toast.error("Enter the role you want to practice"); return; }
+    // Create the AudioContext synchronously inside the click handler so the
+    // browser keeps the user-gesture grant. Resuming later from inside speak()
+    // would silently fail on Safari/iOS.
+    if (!audioCtxRef.current) {
+      try { audioCtxRef.current = new AudioContext({ sampleRate: 24000 }); } catch {}
+    }
     setPhase("loading");
     try {
       await startFn({ data: { role } });
