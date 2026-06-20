@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,16 @@ function Page() {
   const [started, setStarted] = useState(false);
   const [input, setInput] = useState("");
 
+  const transport = useMemo(
+    () => new DefaultChatTransport({
+      api: "/api/interview",
+      body: { role },
+    }),
+    [role],
+  );
+
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/interview" }),
+    transport,
     onError: (e) => toast.error(e.message || "Stream error"),
   });
 
