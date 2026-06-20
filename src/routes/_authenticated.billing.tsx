@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Crown, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/billing")({
-  head: () => ({ meta: [{ title: "Billing — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Billing — NextCareer" }] }),
   errorComponent: ({ error }) => (
     <div className="glass-card rounded-2xl p-6 text-sm text-destructive">
       Failed to load billing: {error.message}

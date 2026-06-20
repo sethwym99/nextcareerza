@@ -8,7 +8,7 @@ import { Target, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/job-match")({
-  head: () => ({ meta: [{ title: "Job Match Score — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Job Match Score — NextCareer" }] }),
   component: Page,
 });
 

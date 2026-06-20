@@ -9,7 +9,7 @@ import { MessageSquare, Sparkles, Copy, Crown } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cover-letter")({
-  head: () => ({ meta: [{ title: "Cover Letter — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Cover Letter — NextCareer" }] }),
   component: Page,
 });
 

@@ -5,9 +5,9 @@ import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Spark
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "NextHire — Land Your Next Role with AI" },
+      { title: "NextCareer — Land Your Next Role with AI" },
       { name: "description", content: "AI career coach: ATS-friendly resumes, tailored cover letters, interview practice, job match scoring, and career roadmaps." },
-      { property: "og:title", content: "NextHire — Land Your Next Role with AI" },
+      { property: "og:title", content: "NextCareer — Land Your Next Role with AI" },
       { property: "og:description", content: "Your AI career coach in your pocket. Resume builder, cover letters, interviews and more." },
     ],
   }),
@@ -33,7 +33,7 @@ function Landing() {
             <span className="inline-grid place-items-center h-8 w-8 rounded-lg bg-[image:var(--gradient-primary)] shadow-[0_0_20px_-2px_oklch(0.62_0.22_277/0.6)]">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </span>
-            NextHire
+            NextCareer
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition">Features</a>
@@ -59,7 +59,7 @@ function Landing() {
             <br /> with an AI career coach.
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-            NextHire rewrites your CV for ATS, tailors cover letters, runs realistic interviews,
+            NextCareer rewrites your CV for ATS, tailors cover letters, runs realistic interviews,
             and builds a roadmap to the career you actually want.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -134,7 +134,7 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} NextHire. Built with Lovable.
+        © {new Date().getFullYear()} NextCareer. Built with Lovable.
       </footer>
     </div>
   );

@@ -8,7 +8,7 @@ import { FileText, Sparkles, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cv-builder")({
-  head: () => ({ meta: [{ title: "CV Builder — NextHire" }] }),
+  head: () => ({ meta: [{ title: "CV Builder — NextCareer" }] }),
   component: Page,
 });
 

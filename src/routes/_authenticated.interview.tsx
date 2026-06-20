@@ -10,7 +10,7 @@ import { Mic, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/interview")({
-  head: () => ({ meta: [{ title: "Interview Practice — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Interview Practice — NextCareer" }] }),
   component: Page,
 });
 

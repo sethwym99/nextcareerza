@@ -13,7 +13,7 @@ import { ListChecks, Plus, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/tracker")({
-  head: () => ({ meta: [{ title: "Application Tracker — NextHire" }] }),
+  head: () => ({ meta: [{ title: "Application Tracker — NextCareer" }] }),
   component: Page,
 });
 

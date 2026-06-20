@@ -12,8 +12,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — NextHire" },
-      { name: "description", content: "Sign in or create your NextHire account." },
+      { title: "Sign in — NextCareer" },
+      { name: "description", content: "Sign in or create your NextCareer account." },
     ],
   }),
   component: AuthPage,
@@ -46,7 +46,7 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Welcome to NextHire!");
+        toast.success("Welcome to NextCareer!");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -67,7 +67,7 @@ function AuthPage() {
           <span className="inline-grid place-items-center h-9 w-9 rounded-lg bg-[image:var(--gradient-primary)]">
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </span>
-          NextHire
+          NextCareer
         </Link>
         <div className="glass-card rounded-2xl p-8">
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>

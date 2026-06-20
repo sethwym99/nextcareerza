@@ -47,7 +47,7 @@ function AuthedLayout() {
             <span className="inline-grid place-items-center h-8 w-8 rounded-lg bg-[image:var(--gradient-primary)]">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </span>
-            NextHire
+            NextCareer
           </Link>
           <button onClick={() => setOpen(false)} className="md:hidden p-1"><X className="h-5 w-5" /></button>
         </div>
@@ -80,7 +80,7 @@ function AuthedLayout() {
       <div className="flex-1 min-w-0">
         <header className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-between bg-background/80 backdrop-blur-xl border-b border-border">
           <button onClick={() => setOpen(true)} className="p-2"><Menu className="h-5 w-5" /></button>
-          <Link to="/dashboard" className="font-display font-bold">NextHire</Link>
+          <Link to="/dashboard" className="font-display font-bold">NextCareer</Link>
           <div className="w-9" />
         </header>
         <main className="p-5 md:p-8 max-w-6xl mx-auto">

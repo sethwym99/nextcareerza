@@ -75,10 +75,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NextHire — AI Career Coach" },
+      { title: "NextCareer — AI Career Coach" },
       { name: "description", content: "Build ATS-friendly resumes, tailor cover letters, practice interviews, and land your next role with AI." },
-      { name: "author", content: "NextHire" },
-      { property: "og:title", content: "NextHire — AI Career Coach" },
+      { name: "author", content: "NextCareer" },
+      { property: "og:title", content: "NextCareer — AI Career Coach" },
       { property: "og:description", content: "AI-powered resume builder, cover letters, interview practice, and career roadmaps." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
