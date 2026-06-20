@@ -306,7 +306,9 @@ function Page() {
     const form = new FormData();
     form.append("file", blob, `answer.${audioExtension(blob.type)}`);
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
-    if (!res.ok || !res.body) throw new Error(await res.text().catch(() => `Transcription ${res.status}`));
+    if (!res.ok || !res.body) {
+      throw new Error(await res.text().catch(() => `Transcription ${res.status}`));
+    }
 
     let text = "";
     const parser = createParser({
@@ -447,7 +449,9 @@ function Page() {
     let awayCount = 0;
     for (let q = 0; q < MAX_QUESTIONS; q++) {
       setPhase("thinking");
-      const turn = await turnFn({ data: { role: initialRole, history: convo, lookAwayCount: awayCount, finalize: false } });
+      const turn = await turnFn({
+        data: { role: initialRole, history: convo, lookAwayCount: awayCount, finalize: false },
+      });
       if (turn.kind !== "turn") break;
       const spoken = (turn.feedback ? turn.feedback + " " : "") + turn.question;
       convo = [...convo, { role: "interviewer", text: turn.question }];
@@ -476,7 +480,14 @@ function Page() {
       awayCount = lookAwayCountRef.current;
     }
     setPhase("thinking");
-    const final = await turnFn({ data: { role: initialRole, history: convo, lookAwayCount: lookAwayCountRef.current, finalize: true } });
+    const final = await turnFn({
+      data: {
+        role: initialRole,
+        history: convo,
+        lookAwayCount: lookAwayCountRef.current,
+        finalize: true,
+      },
+    });
     if (final.kind === "final") setReport(final.report);
     setPhase("done");
   }
