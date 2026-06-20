@@ -121,7 +121,7 @@ function AuthedLayout() {
   );
 }
 
-function Paywall() {
+function Paywall({ onSkip }: { onSkip: () => void }) {
   const features = [
     "AI-powered CV Builder",
     "Cover Letter generator",
