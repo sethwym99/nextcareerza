@@ -2,13 +2,16 @@ import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tansta
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  Sparkles, FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X,
+  Sparkles, FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthedLayout,
 });
+
+const FREE_ALLOWED = ["/upgrade", "/billing"];
 
 const nav = [
   { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
@@ -25,6 +28,8 @@ function AuthedLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<string | null>(null);
+  const [planLoading, setPlanLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -32,9 +37,32 @@ function AuthedLayout() {
 
   useEffect(() => setOpen(false), [location.pathname]);
 
+  useEffect(() => {
+    if (!session?.user) return;
+    let cancelled = false;
+    setPlanLoading(true);
+    supabase
+      .from("profiles")
+      .select("plan")
+      .eq("id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) {
+          setPlan(data?.plan ?? "free");
+          setPlanLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [session?.user?.id, location.pathname]);
+
   if (loading || !session) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
   }
+
+  const isPremium = plan === "premium";
+  const pathAllowed = FREE_ALLOWED.some((p) => location.pathname.startsWith(p));
+  const showPaywall = !planLoading && !isPremium && !pathAllowed;
+
 
   return (
     <div className="min-h-screen flex">
@@ -84,8 +112,50 @@ function AuthedLayout() {
           <div className="w-9" />
         </header>
         <main className="p-5 md:p-8 max-w-6xl mx-auto">
-          <Outlet />
+          {showPaywall ? <Paywall /> : <Outlet />}
         </main>
+
+      </div>
+    </div>
+  );
+}
+
+function Paywall() {
+  const features = [
+    "AI-powered CV Builder",
+    "Cover Letter generator",
+    "Job Match analysis",
+    "Mock Interview practice",
+    "Career Roadmap",
+    "Application Tracker",
+  ];
+  return (
+    <div className="min-h-[70vh] grid place-items-center">
+      <div className="glass-card rounded-2xl p-8 md:p-10 max-w-lg w-full text-center">
+        <div className="inline-grid place-items-center h-14 w-14 rounded-2xl bg-[image:var(--gradient-primary)] mx-auto mb-5">
+          <Crown className="h-7 w-7 text-primary-foreground" />
+        </div>
+        <h1 className="text-2xl md:text-3xl font-display font-bold">Unlock NextCareer Premium</h1>
+        <p className="text-muted-foreground mt-2">
+          Your account is ready. Subscribe to access every tool and accelerate your job search.
+        </p>
+        <div className="mt-6 text-left space-y-2">
+          {features.map((f) => (
+            <div key={f} className="flex items-center gap-2 text-sm">
+              <Check className="h-4 w-4 text-primary shrink-0" /> {f}
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 flex items-baseline justify-center gap-1">
+          <span className="text-4xl font-bold">R99</span>
+          <span className="text-muted-foreground">/month</span>
+        </div>
+        <Link to="/upgrade" className="block mt-6">
+          <Button variant="hero" className="w-full">Subscribe with PayFast</Button>
+        </Link>
+        <Link to="/billing" className="block mt-3 text-xs text-muted-foreground hover:text-foreground">
+          View billing status
+        </Link>
       </div>
     </div>
   );
