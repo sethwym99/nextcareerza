@@ -17,6 +17,14 @@ export const Route = createFileRoute("/_authenticated/interview")({
 type Msg = { role: "interviewer" | "candidate"; text: string };
 type Phase = "setup" | "loading" | "ai-speaking" | "listening" | "thinking" | "done";
 type FocusStatus = "ready" | "face-missing" | "head-away" | "eyes-away";
+type InterviewReport = {
+  score: number;
+  verdict: string;
+  strengths: string[];
+  improvements: string[];
+  redFlags?: string[];
+  summary: string;
+};
 
 const MAX_QUESTIONS = 6;
 const AUDIO_TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
@@ -36,10 +44,31 @@ function audioExtension(type: string) {
 
 type Landmark = { x: number; y: number; z?: number };
 
-function irisAway(landmarks: Landmark[], iris: number[], outer: number, inner: number, upper: number, lower: number) {
-  if (!landmarks[iris[0]] || !landmarks[outer] || !landmarks[inner] || !landmarks[upper] || !landmarks[lower]) return false;
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function irisAway(
+  landmarks: Landmark[],
+  iris: number[],
+  outer: number,
+  inner: number,
+  upper: number,
+  lower: number,
+) {
+  if (
+    !landmarks[iris[0]] ||
+    !landmarks[outer] ||
+    !landmarks[inner] ||
+    !landmarks[upper] ||
+    !landmarks[lower]
+  )
+    return false;
   const center = iris.reduce(
-    (sum, index) => ({ x: sum.x + landmarks[index].x / iris.length, y: sum.y + landmarks[index].y / iris.length }),
+    (sum, index) => ({
+      x: sum.x + landmarks[index].x / iris.length,
+      y: sum.y + landmarks[index].y / iris.length,
+    }),
     { x: 0, y: 0 },
   );
   const minX = Math.min(landmarks[outer].x, landmarks[inner].x);
