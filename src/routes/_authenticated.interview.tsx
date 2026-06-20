@@ -97,7 +97,7 @@ function Page() {
   const [lookAwayCount, setLookAwayCount] = useState(0);
   const [faceVisible, setFaceVisible] = useState(true);
   const [focusStatus, setFocusStatus] = useState<FocusStatus>("ready");
-  const [report, setReport] = useState<any>(null);
+  const [report, setReport] = useState<InterviewReport | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -116,17 +116,28 @@ function Page() {
   const phaseRef = useRef<Phase>("setup");
   const lookAwayCountRef = useRef(0);
 
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
-  useEffect(() => { lookAwayCountRef.current = lookAwayCount; }, [lookAwayCount]);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+  useEffect(() => {
+    lookAwayCountRef.current = lookAwayCount;
+  }, [lookAwayCount]);
 
   // Cleanup
-  useEffect(() => () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    micStreamRef.current?.getTracks().forEach((t) => t.stop());
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    audioCtxRef.current?.close().catch(() => {});
-    try { recorderRef.current?.stop(); } catch {}
-  }, []);
+  useEffect(
+    () => () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      audioCtxRef.current?.close().catch(() => undefined);
+      try {
+        recorderRef.current?.stop();
+      } catch {
+        // Recorder may already be stopped during route cleanup.
+      }
+    },
+    [],
+  );
 
   function setFocus(status: FocusStatus) {
     if (focusStatusRef.current === status) return;
@@ -146,7 +157,9 @@ function Page() {
   }
 
   async function initCameraAndFace() {
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera and microphone are not available in this browser.");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Camera and microphone are not available in this browser.");
+    }
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
