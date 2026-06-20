@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated.upgrade'
 import { Route as AuthenticatedTrackerRouteImport } from './routes/_authenticated.tracker'
@@ -36,6 +37,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTtsRoute = ApiTtsRouteImport.update({
+  id: '/api/tts',
+  path: '/api/tts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiInterviewRoute = ApiInterviewRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/tracker': typeof AuthenticatedTrackerRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
+  '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
 export interface FileRoutesByTo {
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/tracker': typeof AuthenticatedTrackerRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
+  '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
 export interface FileRoutesById {
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/_authenticated/tracker': typeof AuthenticatedTrackerRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
+  '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
 }
 export interface FileRouteTypes {
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/tracker'
     | '/upgrade'
     | '/api/interview'
+    | '/api/tts'
     | '/api/public/payments'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/tracker'
     | '/upgrade'
     | '/api/interview'
+    | '/api/tts'
     | '/api/public/payments'
   id:
     | '__root__'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tracker'
     | '/_authenticated/upgrade'
     | '/api/interview'
+    | '/api/tts'
     | '/api/public/payments'
   fileRoutesById: FileRoutesById
 }
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiInterviewRoute: typeof ApiInterviewRoute
+  ApiTtsRoute: typeof ApiTtsRoute
   ApiPublicPaymentsRoute: typeof ApiPublicPaymentsRoute
 }
 
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tts': {
+      id: '/api/tts'
+      path: '/api/tts'
+      fullPath: '/api/tts'
+      preLoaderRoute: typeof ApiTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/interview': {
@@ -335,6 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiInterviewRoute: ApiInterviewRoute,
+  ApiTtsRoute: ApiTtsRoute,
   ApiPublicPaymentsRoute: ApiPublicPaymentsRoute,
 }
 export const routeTree = rootRouteImport
