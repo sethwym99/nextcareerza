@@ -30,6 +30,7 @@ function AuthedLayout() {
   const [open, setOpen] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
+  const [skipped, setSkipped] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -61,7 +62,7 @@ function AuthedLayout() {
 
   const isPremium = plan === "premium";
   const pathAllowed = FREE_ALLOWED.some((p) => location.pathname.startsWith(p));
-  const showPaywall = !planLoading && !isPremium && !pathAllowed;
+  const showPaywall = !planLoading && !isPremium && !pathAllowed && !skipped;
 
 
   return (
@@ -112,7 +113,7 @@ function AuthedLayout() {
           <div className="w-9" />
         </header>
         <main className="p-5 md:p-8 max-w-6xl mx-auto">
-          {showPaywall ? <Paywall /> : <Outlet />}
+          {showPaywall ? <Paywall onSkip={() => setSkipped(true)} /> : <Outlet />}
         </main>
 
       </div>
@@ -120,7 +121,7 @@ function AuthedLayout() {
   );
 }
 
-function Paywall() {
+function Paywall({ onSkip }: { onSkip: () => void }) {
   const features = [
     "AI-powered CV Builder",
     "Cover Letter generator",
@@ -153,6 +154,9 @@ function Paywall() {
         <Link to="/upgrade" className="block mt-6">
           <Button variant="hero" className="w-full">Subscribe with PayFast</Button>
         </Link>
+        <Button variant="ghost" className="w-full mt-3" onClick={onSkip}>
+          Skip for now
+        </Button>
         <Link to="/billing" className="block mt-3 text-xs text-muted-foreground hover:text-foreground">
           View billing status
         </Link>
