@@ -136,10 +136,36 @@ export const Route = createFileRoute("/api/public/payments")({
           }
           const email = data.email_address;
           const newPlan = data.payment_status === "COMPLETE" ? "premium" : data.payment_status === "CANCELLED" ? "free" : null;
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+          // Resolve user_id from email so we can scope events per user
+          let userId: string | null = null;
+          if (email) {
+            const { data: profile } = await supabaseAdmin
+              .from("profiles")
+              .select("id")
+              .eq("email", email)
+              .maybeSingle();
+            userId = profile?.id ?? null;
+          }
+
+          // Log the webhook event
+          await supabaseAdmin.from("payment_events").insert({
+            user_id: userId,
+            email: email || null,
+            provider: "payfast",
+            payment_status: data.payment_status || "UNKNOWN",
+            amount_gross: data.amount_gross ? Number(data.amount_gross) : null,
+            currency: data.currency || null,
+            pf_payment_id: data.pf_payment_id || null,
+            m_payment_id: data.m_payment_id || null,
+            item_name: data.item_name || null,
+            raw: data,
+          });
+
           if (!email || !newPlan) {
             return new Response("OK", { status: 200 });
           }
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { error } = await supabaseAdmin
             .from("profiles")
             .update({ plan: newPlan, updated_at: new Date().toISOString() })
