@@ -113,12 +113,8 @@ function Page() {
   const awayStartRef = useRef<number>(0);
   const trackDuringAnswerRef = useRef(false);
   const focusStatusRef = useRef<FocusStatus>("ready");
-  const phaseRef = useRef<Phase>("setup");
   const lookAwayCountRef = useRef(0);
 
-  useEffect(() => {
-    phaseRef.current = phase;
-  }, [phase]);
   useEffect(() => {
     lookAwayCountRef.current = lookAwayCount;
   }, [lookAwayCount]);
@@ -451,7 +447,11 @@ function Page() {
       setMessages([...convo]);
       setPhase("ai-speaking");
       trackDuringAnswerRef.current = true; // also watch eyes while AI speaks
-      try { await speak(spoken); } catch (e: any) { toast.error(e.message || "Voice failed"); }
+      try {
+        await speak(spoken);
+      } catch (error: unknown) {
+        toast.error(errorMessage(error, "Voice failed"));
+      }
       trackDuringAnswerRef.current = false;
       setPhase("listening");
       setLiveTranscript("");
@@ -549,6 +549,7 @@ function Page() {
   }
 
   if (phase === "done" && report) {
+    const redFlags = report.redFlags ?? [];
     return (
       <div className="space-y-6 max-w-3xl mx-auto">
         <header className="text-center">
@@ -564,11 +565,11 @@ function Page() {
             <Section title="Strengths" items={report.strengths} />
             <Section title="Improvements" items={report.improvements} />
           </div>
-          {report.redFlags?.length > 0 && (
+          {redFlags.length > 0 && (
             <div className="mt-6 p-4 rounded-xl border border-destructive/40 bg-destructive/10">
               <h3 className="font-semibold flex items-center gap-2 text-destructive"><AlertTriangle className="h-4 w-4" /> Red flags</h3>
               <ul className="list-disc list-inside text-sm mt-2 space-y-1">
-                {report.redFlags.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                {redFlags.map((r: string, i: number) => <li key={i}>{r}</li>)}
               </ul>
             </div>
           )}
@@ -607,7 +608,7 @@ function Page() {
           </div>
           <div className="glass-card rounded-xl p-3 text-xs space-y-1">
             <div>Question {Math.min(messages.filter((m) => m.role === "interviewer").length, MAX_QUESTIONS)} / {MAX_QUESTIONS}</div>
-            <div className="text-muted-foreground">Stay focused on the camera. Pauses end your answer.</div>
+            <div className="text-muted-foreground">Focus: {focusLabel(focusStatus)}. Pauses end your answer.</div>
           </div>
         </div>
 
