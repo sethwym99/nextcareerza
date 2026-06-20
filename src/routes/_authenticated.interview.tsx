@@ -307,9 +307,7 @@ function Page() {
     form.append("file", blob, `answer.${audioExtension(blob.type)}`);
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     if (!res.ok || !res.body) {
-      throw new Error(
-        await res.text().catch(() => `Transcription ${res.status}`),
-      );
+      throw new Error(await res.text().catch(() => `Transcription ${res.status}`));
     }
 
     let text = "";
@@ -551,18 +549,33 @@ function Page() {
     return (
       <div className="space-y-6">
         <header>
-          <h1 className="text-3xl font-bold flex items-center gap-3"><Mic className="h-7 w-7 text-primary-glow" /> AI Voice Interview</h1>
-          <p className="text-muted-foreground mt-1">Real spoken interview with face tracking and a final score.</p>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Mic className="h-7 w-7 text-primary-glow" /> AI Voice Interview
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Real spoken interview with face tracking and a final score.
+          </p>
         </header>
         <div className="glass-card rounded-2xl p-8 max-w-xl mx-auto text-center">
           <Sparkles className="h-8 w-8 text-primary-glow mx-auto mb-3" />
           <h2 className="text-xl font-semibold">What role are you practicing for?</h2>
-          <p className="text-muted-foreground text-sm mt-2">We'll use your camera and microphone. The AI will speak to you and watch for focus.</p>
+          <p className="text-muted-foreground text-sm mt-2">
+            We'll use your camera and microphone. The AI will speak to you and watch for focus.
+          </p>
           <div className="mt-6 flex gap-2">
-            <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Senior Frontend Engineer" onKeyDown={(e) => e.key === "Enter" && begin()} />
-            <Button variant="hero" onClick={begin}>Start</Button>
+            <Input
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="e.g. Senior Frontend Engineer"
+              onKeyDown={(e) => e.key === "Enter" && begin()}
+            />
+            <Button variant="hero" onClick={begin}>
+              Start
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">Works best in Chrome/Edge on desktop.</p>
+          <p className="text-xs text-muted-foreground mt-4">
+            Works best in Chrome/Edge on desktop.
+          </p>
         </div>
       </div>
     );
@@ -578,7 +591,10 @@ function Page() {
         </header>
         <div className="glass-card rounded-2xl p-8">
           <div className="text-center">
-            <div className="text-6xl font-bold">{report.score}<span className="text-2xl text-muted-foreground">/100</span></div>
+            <div className="text-6xl font-bold">
+              {report.score}
+              <span className="text-2xl text-muted-foreground">/100</span>
+            </div>
             <p className="text-muted-foreground mt-2">{report.verdict}</p>
           </div>
           <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -587,16 +603,24 @@ function Page() {
           </div>
           {redFlags.length > 0 && (
             <div className="mt-6 p-4 rounded-xl border border-destructive/40 bg-destructive/10">
-              <h3 className="font-semibold flex items-center gap-2 text-destructive"><AlertTriangle className="h-4 w-4" /> Red flags</h3>
+              <h3 className="font-semibold flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4" /> Red flags
+              </h3>
               <ul className="list-disc list-inside text-sm mt-2 space-y-1">
-                {redFlags.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                {redFlags.map((r: string, i: number) => (
+                  <li key={i}>{r}</li>
+                ))}
               </ul>
             </div>
           )}
           <p className="text-sm text-muted-foreground mt-6 leading-relaxed">{report.summary}</p>
-          <div className="text-xs text-muted-foreground mt-4">Look-away events tracked: {lookAwayCount}</div>
+          <div className="text-xs text-muted-foreground mt-4">
+            Look-away events tracked: {lookAwayCount}
+          </div>
           <div className="mt-6 flex gap-3 justify-center">
-            <Button variant="hero" onClick={resetAll}>Practice again</Button>
+            <Button variant="hero" onClick={resetAll}>
+              Practice again
+            </Button>
           </div>
         </div>
       </div>
@@ -607,11 +631,19 @@ function Page() {
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold flex items-center gap-3"><Mic className="h-6 w-6 text-primary-glow" /> {role} Interview</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-3">
+          <Mic className="h-6 w-6 text-primary-glow" /> {role} Interview
+        </h1>
         <div className="flex items-center gap-3 text-sm">
           <Badge ok={faceVisible} okLabel="Face detected" badLabel="No face" />
-          <Badge ok={lookAwayCount <= 3} okLabel={`Focus ${lookAwayCount} away`} badLabel={`⚠ ${lookAwayCount} look-aways`} />
-          <Button variant="ghost" size="sm" onClick={resetAll}>End</Button>
+          <Badge
+            ok={lookAwayCount <= 3}
+            okLabel={`Focus ${lookAwayCount} away`}
+            badLabel={`⚠ ${lookAwayCount} look-aways`}
+          />
+          <Button variant="ghost" size="sm" onClick={resetAll}>
+            End
+          </Button>
         </div>
       </header>
 
@@ -620,39 +652,57 @@ function Page() {
           <div className="relative rounded-2xl overflow-hidden border border-border bg-black aspect-[4/3]">
             <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
             {!cameraOn && (
-              <div className="absolute inset-0 grid place-items-center text-muted-foreground"><VideoOff className="h-8 w-8" /></div>
+              <div className="absolute inset-0 grid place-items-center text-muted-foreground">
+                <VideoOff className="h-8 w-8" />
+              </div>
             )}
             <div className="absolute top-2 left-2 flex items-center gap-1 text-xs bg-black/60 text-white px-2 py-1 rounded-full">
               <Video className="h-3 w-3" /> Live
             </div>
           </div>
           <div className="glass-card rounded-xl p-3 text-xs space-y-1">
-            <div>Question {Math.min(messages.filter((m) => m.role === "interviewer").length, MAX_QUESTIONS)} / {MAX_QUESTIONS}</div>
-            <div className="text-muted-foreground">Focus: {focusLabel(focusStatus)}. Pauses end your answer.</div>
+            <div>
+              Question{" "}
+              {Math.min(messages.filter((m) => m.role === "interviewer").length, MAX_QUESTIONS)} /{" "}
+              {MAX_QUESTIONS}
+            </div>
+            <div className="text-muted-foreground">
+              Focus: {focusLabel(focusStatus)}. Pauses end your answer.
+            </div>
           </div>
         </div>
 
         <div className="glass-card rounded-2xl p-6 min-h-[360px] flex flex-col">
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
             {phase === "ai-speaking" && "🔊 Interviewer is speaking…"}
-            {phase === "listening" && (<span className="flex items-center gap-2"><Mic className="h-3 w-3 text-primary-glow animate-pulse" /> Listening — answer now</span>)}
+            {phase === "listening" && (
+              <span className="flex items-center gap-2">
+                <Mic className="h-3 w-3 text-primary-glow animate-pulse" /> Listening — answer now
+              </span>
+            )}
             {phase === "thinking" && "Thinking…"}
             {phase === "loading" && "Setting up camera & mic…"}
           </div>
           <div className="text-2xl font-semibold leading-snug min-h-[3em]">
-            {last?.role === "interviewer" ? last.text : (phase === "loading" ? "Preparing…" : "…")}
+            {last?.role === "interviewer" ? last.text : phase === "loading" ? "Preparing…" : "…"}
           </div>
           {phase === "listening" && (
             <div className="mt-6 p-4 rounded-xl bg-secondary/50 text-sm min-h-[6em]">
               <div className="text-xs text-muted-foreground mb-1">You:</div>
-              {liveTranscript || <span className="text-muted-foreground italic">Speak when ready…</span>}
+              {liveTranscript || (
+                <span className="text-muted-foreground italic">Speak when ready…</span>
+              )}
             </div>
           )}
           {phase !== "listening" && phase !== "loading" && (
             <div className="mt-6 space-y-2 text-sm flex-1 overflow-y-auto max-h-[260px]">
               {messages.slice(-4).map((m, i) => (
-                <div key={i} className={m.role === "interviewer" ? "text-foreground" : "text-muted-foreground"}>
-                  <span className="font-semibold">{m.role === "interviewer" ? "AI" : "You"}:</span> {m.text}
+                <div
+                  key={i}
+                  className={m.role === "interviewer" ? "text-foreground" : "text-muted-foreground"}
+                >
+                  <span className="font-semibold">{m.role === "interviewer" ? "AI" : "You"}:</span>{" "}
+                  {m.text}
                 </div>
               ))}
             </div>
@@ -668,7 +718,9 @@ function Section({ title, items }: { title: string; items: string[] }) {
     <div>
       <h3 className="font-semibold mb-2">{title}</h3>
       <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
-        {items?.map((s, i) => <li key={i}>{s}</li>)}
+        {items?.map((s, i) => (
+          <li key={i}>{s}</li>
+        ))}
       </ul>
     </div>
   );
@@ -676,7 +728,9 @@ function Section({ title, items }: { title: string; items: string[] }) {
 
 function Badge({ ok, okLabel, badLabel }: { ok: boolean; okLabel: string; badLabel: string }) {
   return (
-    <span className={`px-2 py-1 rounded-full text-xs border ${ok ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-amber-500/40 bg-amber-500/10 text-amber-400"}`}>
+    <span
+      className={`px-2 py-1 rounded-full text-xs border ${ok ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-amber-500/40 bg-amber-500/10 text-amber-400"}`}
+    >
       {ok ? okLabel : badLabel}
     </span>
   );

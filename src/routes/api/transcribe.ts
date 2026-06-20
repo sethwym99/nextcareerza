@@ -19,7 +19,8 @@ export const Route = createFileRoute("/api/transcribe")({
         const file = form.get("file");
         if (!(file instanceof File)) return new Response("Audio file required", { status: 400 });
         if (file.size < 1024) return new Response("Recording was empty", { status: 400 });
-        if (file.size > MAX_AUDIO_BYTES) return new Response("Recording is too large", { status: 413 });
+        if (file.size > MAX_AUDIO_BYTES)
+          return new Response("Recording is too large", { status: 413 });
 
         const mime = file.type.split(";")[0];
         const ext = EXT_BY_MIME[mime];
