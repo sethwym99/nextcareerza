@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkles } from "lucide-react";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -64,9 +64,7 @@ function AuthPage() {
     <div className="min-h-screen grid place-items-center px-4" style={{ background: "var(--gradient-hero)" }}>
       <div className="w-full max-w-md">
         <Link to="/" className="flex items-center justify-center gap-2 font-display font-bold text-xl mb-6">
-          <span className="inline-grid place-items-center h-9 w-9 rounded-lg bg-[image:var(--gradient-primary)]">
-            <Sparkles className="h-4 w-4 text-primary-foreground" />
-          </span>
+          <img src="/logo.png" alt="NextCareer" className="h-9 w-9 rounded-lg" />
           NextCareer
         </Link>
         <div className="glass-card rounded-2xl p-8">
