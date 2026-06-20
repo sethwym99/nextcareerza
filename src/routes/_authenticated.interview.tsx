@@ -421,7 +421,11 @@ function Page() {
           lastSoundAt = now;
           setLiveTranscript("Recording your answer…");
         }
-        if ((heardSpeech && now - lastSoundAt > 2600) || (!heardSpeech && now - recorderStartedAt > 16000) || now - recorderStartedAt > 90000) {
+        if (
+          (heardSpeech && now - lastSoundAt > 2600) ||
+          (!heardSpeech && now - recorderStartedAt > 16000) ||
+          now - recorderStartedAt > 90000
+        ) {
           stopRecorder();
           return;
         }
@@ -452,7 +456,12 @@ function Page() {
       setPhase("listening");
       setLiveTranscript("");
       let answer = "";
-      try { answer = await startListening(); } catch (e: any) { toast.error(e.message || "Mic failed"); break; }
+      try {
+        answer = await startListening();
+      } catch (error: unknown) {
+        toast.error(errorMessage(error, "Mic failed"));
+        break;
+      }
       if (!answer) answer = "(no answer)";
       convo = [...convo, { role: "candidate", text: answer }];
       setMessages([...convo]);
@@ -466,26 +475,37 @@ function Page() {
   }
 
   async function begin() {
-    if (role.trim().length < 2) { toast.error("Enter the role you want to practice"); return; }
+    if (role.trim().length < 2) {
+      toast.error("Enter the role you want to practice");
+      return;
+    }
     // Create the AudioContext synchronously inside the click handler so the
     // browser keeps the user-gesture grant. Resuming later from inside speak()
     // would silently fail on Safari/iOS.
     if (!audioCtxRef.current) {
-      try { audioCtxRef.current = new AudioContext({ sampleRate: 24000 }); } catch {}
+      try {
+        audioCtxRef.current = new AudioContext({ sampleRate: 24000 });
+      } catch {
+        // Some browsers delay AudioContext creation until playback.
+      }
     }
     setPhase("loading");
     try {
       await initCameraAndFace();
       await startFn({ data: { role } });
       await runConversation(role);
-    } catch (e: any) {
-      toast.error(e.message || "Could not start interview");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Could not start interview"));
       setPhase("setup");
     }
   }
 
   function stopAll() {
-    try { stopAnswerRef.current?.(); } catch {}
+    try {
+      stopAnswerRef.current?.();
+    } catch {
+      // Answer recording may already be stopped.
+    }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
