@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          applied_date: string | null
+          company: string
+          created_at: string
+          follow_up_date: string | null
+          id: string
+          interview_date: string | null
+          notes: string | null
+          role: string
+          status: string
+          updated_at: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_date?: string | null
+          company: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          interview_date?: string | null
+          notes?: string | null
+          role: string
+          status?: string
+          updated_at?: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_date?: string | null
+          company?: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          interview_date?: string | null
+          notes?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          plan: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          plan?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          plan?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
