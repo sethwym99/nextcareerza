@@ -154,7 +154,7 @@ function Paywall({ onSkip }: { onSkip: () => void }) {
         <Link to="/upgrade" className="block mt-6">
           <Button variant="hero" className="w-full">Subscribe with PayFast</Button>
         </Link>
-        <Button variant="ghost" className="w-full mt-3" onClick={() => setSkipped(true)}>
+        <Button variant="ghost" className="w-full mt-3" onClick={onSkip}>
           Skip for now
         </Button>
         <Link to="/billing" className="block mt-3 text-xs text-muted-foreground hover:text-foreground">
