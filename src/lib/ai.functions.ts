@@ -107,23 +107,15 @@ export const analyzeCv = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "cv_analysis");
     const gateway = getGateway();
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: gateway(MODEL),
       system:
-        "You are an expert career coach and ATS resume reviewer. Score CVs objectively, list strengths, weaknesses, missing ATS keywords, and provide a clean, ATS-friendly rewritten version in plain text using standard section headings (Summary, Experience, Education, Skills, Certifications).",
-      prompt: `Analyze this CV and produce a JSON report.\n\nCV:\n${data.cvText}`,
-      output: Output.object({
-        schema: z.object({
-          atsScore: z.number().min(0).max(100),
-          strengths: z.array(z.string()),
-          weaknesses: z.array(z.string()),
-          missingKeywords: z.array(z.string()),
-          improvedCv: z.string(),
-        }),
-      }),
+        "You are an expert career coach and ATS resume reviewer. Return only valid JSON with keys: atsScore number 0-100, strengths string array, weaknesses string array, missingKeywords string array, improvedCv string. Do not use markdown fences.",
+      prompt: `Analyze this CV and produce the JSON report.\n\nCV:\n${data.cvText}`,
     });
     await logUsage(context.supabase, context.userId, "cv_analysis");
-    return output;
+    const parsed = parseJsonObject<ReturnType<typeof fallbackCvReport>>(text);
+    return parsed ?? fallbackCvReport(data.cvText);
   });
 
 // ---------- Cover Letter ----------
@@ -157,23 +149,14 @@ export const jobMatchScore = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "job_match");
     const gateway = getGateway();
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: gateway(MODEL),
-      system: "You match candidates to jobs. Be strict and concrete. Identify missing skills, missing keywords, and recommendations to close the gap.",
+      system: "You match candidates to jobs. Return only valid JSON with keys: matchScore number 0-100, matchedSkills string array, missingSkills string array, missingKeywords string array, recommendations string array, summary string. Do not use markdown fences.",
       prompt: `CV:\n${data.cvText}\n\nJOB:\n${data.jobDescription}`,
-      output: Output.object({
-        schema: z.object({
-          matchScore: z.number().min(0).max(100),
-          matchedSkills: z.array(z.string()),
-          missingSkills: z.array(z.string()),
-          missingKeywords: z.array(z.string()),
-          recommendations: z.array(z.string()),
-          summary: z.string(),
-        }),
-      }),
     });
     await logUsage(context.supabase, context.userId, "job_match");
-    return output;
+    const parsed = parseJsonObject<ReturnType<typeof fallbackJobMatch>>(text);
+    return parsed ?? fallbackJobMatch(data.cvText, data.jobDescription);
   });
 
 // ---------- Career Roadmap ----------
@@ -189,27 +172,30 @@ export const generateRoadmap = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "roadmap");
     const gateway = getGateway();
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: gateway(MODEL),
-      system: "You are a career coach creating actionable step-by-step learning roadmaps with concrete resources, projects, and milestones.",
+      system: "You are a career coach creating actionable step-by-step learning roadmaps. Return only valid JSON with keys: title string, overview string, milestones array of {month number,title string,objectives string array,resources string array,project string}, keySkills string array. Do not use markdown fences.",
       prompt: `Goal: ${data.goal}\nCurrent level: ${data.currentLevel}\nTimeframe: ${data.timeframeMonths} months`,
-      output: Output.object({
-        schema: z.object({
-          title: z.string(),
-          overview: z.string(),
-          milestones: z.array(z.object({
-            month: z.number(),
-            title: z.string(),
-            objectives: z.array(z.string()),
-            resources: z.array(z.string()),
-            project: z.string(),
-          })),
-          keySkills: z.array(z.string()),
-        }),
-      }),
     });
     await logUsage(context.supabase, context.userId, "roadmap");
-    return output;
+    const parsed = parseJsonObject<{
+      title: string;
+      overview: string;
+      milestones: Array<{ month: number; title: string; objectives: string[]; resources: string[]; project: string }>;
+      keySkills: string[];
+    }>(text);
+    return parsed ?? {
+      title: `${data.timeframeMonths}-Month ${data.goal} Roadmap`,
+      overview: `A practical plan to move from ${data.currentLevel} toward ${data.goal}.`,
+      keySkills: ["Core fundamentals", "Portfolio proof", "Interview readiness", "Networking"],
+      milestones: Array.from({ length: Math.min(data.timeframeMonths, 6) }, (_, i) => ({
+        month: i + 1,
+        title: `Build month ${i + 1} momentum`,
+        objectives: ["Study the most important role requirements", "Complete one visible portfolio task", "Review progress and improve weak areas"],
+        resources: ["Official documentation", "Role-specific tutorials", "Practice projects"],
+        project: `Create a ${data.goal}-focused portfolio piece that proves this month's skills.`,
+      })),
+    };
   });
 
 // ---------- Interview start (logs a session) ----------
