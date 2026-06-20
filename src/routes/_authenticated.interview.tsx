@@ -211,7 +211,9 @@ function Page() {
             const yaw = Math.atan2(m[8], m[10]) * (180 / Math.PI);
             const pitch = Math.atan2(-m[9], Math.sqrt(m[1] ** 2 + m[5] ** 2)) * (180 / Math.PI);
             if (Math.abs(yaw) > 20 || Math.abs(pitch) > 18) status = "head-away";
-            else if (res.faceLandmarks?.[0] && eyesAway(res.faceLandmarks[0] as Landmark[])) status = "eyes-away";
+            else if (res.faceLandmarks?.[0] && eyesAway(res.faceLandmarks[0] as Landmark[])) {
+              status = "eyes-away";
+            }
           }
           setFaceVisible(status !== "face-missing");
           setFocus(status);
@@ -226,7 +228,9 @@ function Page() {
           } else {
             finishFocusSegment(ts);
           }
-        } catch {}
+        } catch {
+          // Ignore an individual frame; the next frame will retry detection.
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -272,7 +276,11 @@ function Page() {
     const parser = createParser({
       onEvent(event) {
         let payload: { type: string; audio?: string };
-        try { payload = JSON.parse(event.data); } catch { return; }
+        try {
+          payload = JSON.parse(event.data);
+        } catch {
+          return;
+        }
         if (payload.type !== "speech.audio.delta" || !payload.audio) return;
         const binary = atob(payload.audio);
         const bytes = new Uint8Array(binary.length);
