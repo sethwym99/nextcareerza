@@ -604,6 +604,34 @@ function Page() {
               Start
             </Button>
           </div>
+          <div className="mt-6 text-left">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Interviewer voice
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {VOICES.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => {
+                    setVoice(v.id);
+                    try {
+                      window.localStorage.setItem("interview_voice", v.id);
+                    } catch {
+                      /* ignore storage errors */
+                    }
+                  }}
+                  className={`text-xs px-3 py-2 rounded-lg border text-left transition ${
+                    voice === v.id
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border hover:border-primary/50 text-muted-foreground"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground mt-4">
             Works best in Chrome/Edge on desktop.
           </p>
