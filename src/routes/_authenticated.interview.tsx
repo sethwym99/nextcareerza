@@ -124,6 +124,13 @@ function Page() {
   const rafRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioPlayheadRef = useRef(0);
+  const speechGainRef = useRef<GainNode | null>(null);
+  const speechAnalyserRef = useRef<AnalyserNode | null>(null);
+  const [speechAnalyser, setSpeechAnalyser] = useState<AnalyserNode | null>(null);
+  const [voice, setVoice] = useState<string>(() => {
+    if (typeof window === "undefined") return "alloy";
+    return window.localStorage.getItem("interview_voice") ?? "alloy";
+  });
   const recorderRef = useRef<MediaRecorder | null>(null);
   const stopAnswerRef = useRef<(() => void) | null>(null);
   const lookingAwayRef = useRef(false);
