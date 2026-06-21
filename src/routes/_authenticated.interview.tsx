@@ -5,6 +5,16 @@ import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
+import { InterviewerAvatar } from "@/components/interview/InterviewerAvatar";
+
+const VOICES = [
+  { id: "alloy", label: "Alex — neutral pro" },
+  { id: "shimmer", label: "Sienna — warm friendly" },
+  { id: "verse", label: "Vince — energetic" },
+  { id: "sage", label: "Sage — calm mentor" },
+  { id: "coral", label: "Coral — bright" },
+  { id: "ash", label: "Ash — deep steady" },
+];
 import { toast } from "sonner";
 import { createParser } from "eventsource-parser";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
@@ -114,6 +124,13 @@ function Page() {
   const rafRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioPlayheadRef = useRef(0);
+  const speechGainRef = useRef<GainNode | null>(null);
+  const speechAnalyserRef = useRef<AnalyserNode | null>(null);
+  const [speechAnalyser, setSpeechAnalyser] = useState<AnalyserNode | null>(null);
+  const [voice, setVoice] = useState<string>(() => {
+    if (typeof window === "undefined") return "alloy";
+    return window.localStorage.getItem("interview_voice") ?? "alloy";
+  });
   const recorderRef = useRef<MediaRecorder | null>(null);
   const stopAnswerRef = useRef<(() => void) | null>(null);
   const lookingAwayRef = useRef(false);
@@ -249,6 +266,20 @@ function Page() {
     audioPlayheadRef.current = 0;
     let pending = new Uint8Array(0);
 
+    // Build (or reuse) gain -> analyser -> destination chain so we can tap
+    // the playback amplitude for lip sync.
+    if (!speechGainRef.current || !speechAnalyserRef.current) {
+      const gain = ctx.createGain();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      gain.connect(analyser);
+      analyser.connect(ctx.destination);
+      speechGainRef.current = gain;
+      speechAnalyserRef.current = analyser;
+      setSpeechAnalyser(analyser);
+    }
+    const sink = speechGainRef.current;
+
     const playChunk = (incoming: Uint8Array) => {
       const bytes = new Uint8Array(pending.length + incoming.length);
       bytes.set(pending);
@@ -262,7 +293,7 @@ function Page() {
       buffer.copyToChannel(floats, 0);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.connect(ctx.destination);
+      source.connect(sink);
       const head = audioPlayheadRef.current;
       const startAt = head === 0 ? ctx.currentTime + 0.05 : Math.max(head, ctx.currentTime);
       source.start(startAt);
@@ -272,7 +303,7 @@ function Page() {
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice: "alloy" }),
+      body: JSON.stringify({ text, voice }),
     });
     if (!res.ok || !res.body) throw new Error(`TTS ${res.status}`);
 
@@ -529,6 +560,9 @@ function Page() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     audioCtxRef.current?.close().catch(() => {});
     audioCtxRef.current = null;
+    speechGainRef.current = null;
+    speechAnalyserRef.current = null;
+    setSpeechAnalyser(null);
     streamRef.current = null;
     micStreamRef.current = null;
     setCameraOn(false);
@@ -572,6 +606,34 @@ function Page() {
             <Button variant="hero" onClick={begin}>
               Start
             </Button>
+          </div>
+          <div className="mt-6 text-left">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Interviewer voice
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {VOICES.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => {
+                    setVoice(v.id);
+                    try {
+                      window.localStorage.setItem("interview_voice", v.id);
+                    } catch {
+                      /* ignore storage errors */
+                    }
+                  }}
+                  className={`text-xs px-3 py-2 rounded-lg border text-left transition ${
+                    voice === v.id
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border hover:border-primary/50 text-muted-foreground"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
             Works best in Chrome/Edge on desktop.
@@ -683,8 +745,15 @@ function Page() {
             {phase === "thinking" && "Thinking…"}
             {phase === "loading" && "Setting up camera & mic…"}
           </div>
-          <div className="text-2xl font-semibold leading-snug min-h-[3em]">
-            {last?.role === "interviewer" ? last.text : phase === "loading" ? "Preparing…" : "…"}
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <InterviewerAvatar
+              analyser={speechAnalyser}
+              speaking={phase === "ai-speaking"}
+              voiceId={voice}
+            />
+            <div className="text-xl sm:text-2xl font-semibold leading-snug min-h-[3em] flex-1 text-center sm:text-left">
+              {last?.role === "interviewer" ? last.text : phase === "loading" ? "Preparing…" : "…"}
+            </div>
           </div>
           {phase === "listening" && (
             <div className="mt-6 p-4 rounded-xl bg-secondary/50 text-sm min-h-[6em]">
