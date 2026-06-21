@@ -266,6 +266,20 @@ function Page() {
     audioPlayheadRef.current = 0;
     let pending = new Uint8Array(0);
 
+    // Build (or reuse) gain -> analyser -> destination chain so we can tap
+    // the playback amplitude for lip sync.
+    if (!speechGainRef.current || !speechAnalyserRef.current) {
+      const gain = ctx.createGain();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      gain.connect(analyser);
+      analyser.connect(ctx.destination);
+      speechGainRef.current = gain;
+      speechAnalyserRef.current = analyser;
+      setSpeechAnalyser(analyser);
+    }
+    const sink = speechGainRef.current;
+
     const playChunk = (incoming: Uint8Array) => {
       const bytes = new Uint8Array(pending.length + incoming.length);
       bytes.set(pending);
@@ -279,7 +293,7 @@ function Page() {
       buffer.copyToChannel(floats, 0);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
-      source.connect(ctx.destination);
+      source.connect(sink);
       const head = audioPlayheadRef.current;
       const startAt = head === 0 ? ctx.currentTime + 0.05 : Math.max(head, ctx.currentTime);
       source.start(startAt);
@@ -289,7 +303,7 @@ function Page() {
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice: "alloy" }),
+      body: JSON.stringify({ text, voice }),
     });
     if (!res.ok || !res.body) throw new Error(`TTS ${res.status}`);
 
