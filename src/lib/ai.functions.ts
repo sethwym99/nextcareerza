@@ -55,6 +55,28 @@ async function safeLogUsage(supabase: any, userId: string, feature: string) {
 
 const MODEL = "google/gemini-3-flash-preview";
 
+function rethrowGatewayError(error: unknown): never {
+  const msg = error instanceof Error ? error.message : String(error);
+  if (/402|payment required|insufficient|out of credits|quota/i.test(msg)) {
+    throw new Error("The AI service is temporarily unavailable (workspace AI credits exhausted). This is not related to your subscription — please contact support or try again later.");
+  }
+  if (/401|unauthorized|invalid api key/i.test(msg)) {
+    throw new Error("The AI service is temporarily misconfigured. Please contact support.");
+  }
+  if (/429|rate/i.test(msg)) {
+    throw new Error("The AI service is busy right now. Please try again in a moment.");
+  }
+  throw error instanceof Error ? error : new Error(msg);
+}
+
+async function callModel(args: Parameters<typeof generateText>[0]) {
+  try {
+    return await generateText(args);
+  } catch (error) {
+    rethrowGatewayError(error);
+  }
+}
+
 function parseJsonObject<T>(text: string): T | null {
   const cleaned = text.replace(/```json|```/g, "").trim();
   try {
@@ -115,7 +137,7 @@ export const analyzeCv = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "cv_analysis");
     const gateway = getGateway();
-    const { text } = await generateText({
+    const { text } = await callModel({
       model: gateway(MODEL),
       system:
         "You are an expert career coach and ATS resume reviewer. Return only valid JSON with keys: atsScore number 0-100, strengths string array, weaknesses string array, missingKeywords string array, improvedCv string. Do not use markdown fences.",
@@ -139,7 +161,7 @@ export const generateCoverLetter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "cover_letter");
     const gateway = getGateway();
-    const { text } = await generateText({
+    const { text } = await callModel({
       model: gateway(MODEL),
       system: "You write tailored, ATS-friendly cover letters. Keep them ~250-350 words, specific, with strong opening and clear CTA.",
       prompt: `Tone: ${data.tone}\n\nJob description:\n${data.jobDescription}\n\nCandidate CV/notes:\n${data.cvText || "(not provided — write a generic but compelling letter)"}\n\nReturn ONLY the cover letter text.`,
@@ -157,7 +179,7 @@ export const jobMatchScore = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "job_match");
     const gateway = getGateway();
-    const { text } = await generateText({
+    const { text } = await callModel({
       model: gateway(MODEL),
       system: "You match candidates to jobs. Return only valid JSON with keys: matchScore number 0-100, matchedSkills string array, missingSkills string array, missingKeywords string array, recommendations string array, summary string. Do not use markdown fences.",
       prompt: `CV:\n${data.cvText}\n\nJOB:\n${data.jobDescription}`,
@@ -180,7 +202,7 @@ export const generateRoadmap = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await enforceLimit(context.supabase, context.userId, "roadmap");
     const gateway = getGateway();
-    const { text } = await generateText({
+    const { text } = await callModel({
       model: gateway(MODEL),
       system: "You are a career coach creating actionable step-by-step learning roadmaps. Return only valid JSON with keys: title string, overview string, milestones array of {month number,title string,objectives string array,resources string array,project string}, keySkills string array. Do not use markdown fences.",
       prompt: `Goal: ${data.goal}\nCurrent level: ${data.currentLevel}\nTimeframe: ${data.timeframeMonths} months`,
@@ -234,7 +256,7 @@ export const interviewTurn = createServerFn({ method: "POST" })
     const transcript = data.history.map((m) => `${m.role.toUpperCase()}: ${m.text}`).join("\n");
 
     if (data.finalize) {
-      const { text } = await generateText({
+      const { text } = await callModel({
         model: gateway(MODEL),
         system:
           "You are a senior hiring manager scoring a mock interview. Return ONLY valid JSON (no fences) with keys: score number 0-100, verdict string (one short sentence), strengths string array, improvements string array, redFlags string array, summary string. Consider answer quality, structure (STAR), specificity, and the candidate's focus signal.",
@@ -262,7 +284,7 @@ export const interviewTurn = createServerFn({ method: "POST" })
     }
 
     const questionNumber = data.history.filter((m) => m.role === "interviewer").length + 1;
-    const { text } = await generateText({
+    const { text } = await callModel({
       model: gateway(MODEL),
       system:
         `You are a friendly but sharp hiring manager conducting a SPOKEN mock interview for a ${data.role} role. ` +
