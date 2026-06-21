@@ -71,7 +71,7 @@ function rethrowGatewayError(error: unknown): never {
 
 async function callModel(args: Parameters<typeof generateText>[0]) {
   try {
-    return await callModel(args);
+    return await generateText(args);
   } catch (error) {
     rethrowGatewayError(error);
   }
