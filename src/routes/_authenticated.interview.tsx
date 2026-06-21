@@ -560,6 +560,9 @@ function Page() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     audioCtxRef.current?.close().catch(() => {});
     audioCtxRef.current = null;
+    speechGainRef.current = null;
+    speechAnalyserRef.current = null;
+    setSpeechAnalyser(null);
     streamRef.current = null;
     micStreamRef.current = null;
     setCameraOn(false);
