@@ -742,8 +742,15 @@ function Page() {
             {phase === "thinking" && "Thinking…"}
             {phase === "loading" && "Setting up camera & mic…"}
           </div>
-          <div className="text-2xl font-semibold leading-snug min-h-[3em]">
-            {last?.role === "interviewer" ? last.text : phase === "loading" ? "Preparing…" : "…"}
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <InterviewerAvatar
+              analyser={speechAnalyser}
+              speaking={phase === "ai-speaking"}
+              voiceId={voice}
+            />
+            <div className="text-xl sm:text-2xl font-semibold leading-snug min-h-[3em] flex-1 text-center sm:text-left">
+              {last?.role === "interviewer" ? last.text : phase === "loading" ? "Preparing…" : "…"}
+            </div>
           </div>
           {phase === "listening" && (
             <div className="mt-6 p-4 rounded-xl bg-secondary/50 text-sm min-h-[6em]">
