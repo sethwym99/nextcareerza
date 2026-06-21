@@ -55,6 +55,28 @@ async function safeLogUsage(supabase: any, userId: string, feature: string) {
 
 const MODEL = "google/gemini-3-flash-preview";
 
+function rethrowGatewayError(error: unknown): never {
+  const msg = error instanceof Error ? error.message : String(error);
+  if (/402|payment required|insufficient|out of credits|quota/i.test(msg)) {
+    throw new Error("The AI service is temporarily unavailable (workspace AI credits exhausted). This is not related to your subscription — please contact support or try again later.");
+  }
+  if (/401|unauthorized|invalid api key/i.test(msg)) {
+    throw new Error("The AI service is temporarily misconfigured. Please contact support.");
+  }
+  if (/429|rate/i.test(msg)) {
+    throw new Error("The AI service is busy right now. Please try again in a moment.");
+  }
+  throw error instanceof Error ? error : new Error(msg);
+}
+
+async function callModel(args: Parameters<typeof generateText>[0]) {
+  try {
+    return await generateText(args);
+  } catch (error) {
+    rethrowGatewayError(error);
+  }
+}
+
 function parseJsonObject<T>(text: string): T | null {
   const cleaned = text.replace(/```json|```/g, "").trim();
   try {
