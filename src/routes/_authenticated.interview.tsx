@@ -5,6 +5,16 @@ import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
+import { InterviewerAvatar } from "@/components/interview/InterviewerAvatar";
+
+const VOICES = [
+  { id: "alloy", label: "Alex — neutral pro" },
+  { id: "shimmer", label: "Sienna — warm friendly" },
+  { id: "verse", label: "Vince — energetic" },
+  { id: "sage", label: "Sage — calm mentor" },
+  { id: "coral", label: "Coral — bright" },
+  { id: "ash", label: "Ash — deep steady" },
+];
 import { toast } from "sonner";
 import { createParser } from "eventsource-parser";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
