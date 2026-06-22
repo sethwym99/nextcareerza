@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_packs: {
+        Row: {
+          application_id: string | null
+          cover_letter: string | null
+          created_at: string
+          id: string
+          job_company: string | null
+          job_location: string | null
+          job_role: string | null
+          job_url: string | null
+          match_score: number | null
+          matched_skills: Json | null
+          missing_skills: Json | null
+          raw: Json
+          salary_currency: string | null
+          salary_high: number | null
+          salary_low: number | null
+          salary_period: string | null
+          tailored_cv: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_id?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_company?: string | null
+          job_location?: string | null
+          job_role?: string | null
+          job_url?: string | null
+          match_score?: number | null
+          matched_skills?: Json | null
+          missing_skills?: Json | null
+          raw?: Json
+          salary_currency?: string | null
+          salary_high?: number | null
+          salary_low?: number | null
+          salary_period?: string | null
+          tailored_cv?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_id?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_company?: string | null
+          job_location?: string | null
+          job_role?: string | null
+          job_url?: string | null
+          match_score?: number | null
+          matched_skills?: Json | null
+          missing_skills?: Json | null
+          raw?: Json
+          salary_currency?: string | null
+          salary_high?: number | null
+          salary_low?: number | null
+          salary_period?: string | null
+          tailored_cv?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_packs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           applied_date: string | null
@@ -106,6 +180,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          base_cv_text: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -114,6 +189,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          base_cv_text?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -122,6 +198,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          base_cv_text?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
