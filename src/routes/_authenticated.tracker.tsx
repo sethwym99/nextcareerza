@@ -49,6 +49,18 @@ function Page() {
     },
   });
 
+  const { data: packs = [] } = useQuery({
+    queryKey: ["application-packs", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await (supabase.from as any)("application_packs").select("*");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+  const packByApp = new Map<string, any>(packs.map((p: any) => [p.application_id, p]));
+  const [openPack, setOpenPack] = useState<any | null>(null);
+
   const create = useMutation({
     mutationFn: async (input: Partial<App>) => {
       const { error } = await supabase.from("applications").insert({ ...input, user_id: user!.id } as any);
