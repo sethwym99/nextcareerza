@@ -17,6 +17,7 @@ import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as ApiInterviewRouteImport } from './routes/api/interview'
 import { Route as AuthenticatedUpgradeRouteImport } from './routes/_authenticated.upgrade'
 import { Route as AuthenticatedTrackerRouteImport } from './routes/_authenticated.tracker'
+import { Route as AuthenticatedSmartApplyRouteImport } from './routes/_authenticated.smart-apply'
 import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated.roadmap'
 import { Route as AuthenticatedJobMatchRouteImport } from './routes/_authenticated.job-match'
 import { Route as AuthenticatedInterviewRouteImport } from './routes/_authenticated.interview'
@@ -63,6 +64,11 @@ const AuthenticatedUpgradeRoute = AuthenticatedUpgradeRouteImport.update({
 const AuthenticatedTrackerRoute = AuthenticatedTrackerRouteImport.update({
   id: '/tracker',
   path: '/tracker',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSmartApplyRoute = AuthenticatedSmartApplyRouteImport.update({
+  id: '/smart-apply',
+  path: '/smart-apply',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRoadmapRoute = AuthenticatedRoadmapRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/interview': typeof AuthenticatedInterviewRoute
   '/job-match': typeof AuthenticatedJobMatchRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
+  '/smart-apply': typeof AuthenticatedSmartApplyRoute
   '/tracker': typeof AuthenticatedTrackerRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/interview': typeof AuthenticatedInterviewRoute
   '/job-match': typeof AuthenticatedJobMatchRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
+  '/smart-apply': typeof AuthenticatedSmartApplyRoute
   '/tracker': typeof AuthenticatedTrackerRoute
   '/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_authenticated/interview': typeof AuthenticatedInterviewRoute
   '/_authenticated/job-match': typeof AuthenticatedJobMatchRoute
   '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
+  '/_authenticated/smart-apply': typeof AuthenticatedSmartApplyRoute
   '/_authenticated/tracker': typeof AuthenticatedTrackerRoute
   '/_authenticated/upgrade': typeof AuthenticatedUpgradeRoute
   '/api/interview': typeof ApiInterviewRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/interview'
     | '/job-match'
     | '/roadmap'
+    | '/smart-apply'
     | '/tracker'
     | '/upgrade'
     | '/api/interview'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/interview'
     | '/job-match'
     | '/roadmap'
+    | '/smart-apply'
     | '/tracker'
     | '/upgrade'
     | '/api/interview'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/_authenticated/interview'
     | '/_authenticated/job-match'
     | '/_authenticated/roadmap'
+    | '/_authenticated/smart-apply'
     | '/_authenticated/tracker'
     | '/_authenticated/upgrade'
     | '/api/interview'
@@ -283,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrackerRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/smart-apply': {
+      id: '/_authenticated/smart-apply'
+      path: '/smart-apply'
+      fullPath: '/smart-apply'
+      preLoaderRoute: typeof AuthenticatedSmartApplyRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/roadmap': {
       id: '/_authenticated/roadmap'
       path: '/roadmap'
@@ -350,6 +369,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInterviewRoute: typeof AuthenticatedInterviewRoute
   AuthenticatedJobMatchRoute: typeof AuthenticatedJobMatchRoute
   AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
+  AuthenticatedSmartApplyRoute: typeof AuthenticatedSmartApplyRoute
   AuthenticatedTrackerRoute: typeof AuthenticatedTrackerRoute
   AuthenticatedUpgradeRoute: typeof AuthenticatedUpgradeRoute
 }
@@ -362,6 +382,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInterviewRoute: AuthenticatedInterviewRoute,
   AuthenticatedJobMatchRoute: AuthenticatedJobMatchRoute,
   AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
+  AuthenticatedSmartApplyRoute: AuthenticatedSmartApplyRoute,
   AuthenticatedTrackerRoute: AuthenticatedTrackerRoute,
   AuthenticatedUpgradeRoute: AuthenticatedUpgradeRoute,
 }
