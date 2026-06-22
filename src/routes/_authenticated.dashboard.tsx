@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getUsageStatus } from "@/lib/ai.functions";
-import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Crown, Sparkles } from "lucide-react";
+import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Crown, Sparkles, Wand2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — NextCareer" }] }),
@@ -10,12 +10,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const tools = [
-  { to: "/cv-builder" as const, label: "CV Builder", icon: FileText, desc: "Upload or paste a CV. Get an ATS-friendly rewrite + score.", accent: "from-primary to-primary-glow" },
-  { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare, desc: "Tailored cover letters from any job description.", accent: "from-primary-glow to-primary" },
-  { to: "/job-match" as const, label: "Job Match Score", icon: Target, desc: "How well does your CV fit this role?", accent: "from-primary to-primary-glow" },
-  { to: "/interview" as const, label: "Interview Practice", icon: Mic, desc: "Live AI mock interviews with feedback.", accent: "from-primary-glow to-primary" },
-  { to: "/roadmap" as const, label: "Career Roadmap", icon: MapIcon, desc: "Step-by-step plan to your next role.", accent: "from-primary to-primary-glow" },
-  { to: "/tracker" as const, label: "Application Tracker", icon: ListChecks, desc: "Track every job you apply to.", accent: "from-primary-glow to-primary" },
+  { to: "/smart-apply" as const, label: "Smart Apply", icon: Wand2, desc: "Paste a job link → tailored CV + cover letter + match + salary in one click.", accent: "from-primary to-primary-glow" },
+  { to: "/cv-builder" as const, label: "CV Builder", icon: FileText, desc: "Upload or paste a CV. Get an ATS-friendly rewrite + score.", accent: "from-primary-glow to-primary" },
+  { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare, desc: "Tailored cover letters from any job description.", accent: "from-primary to-primary-glow" },
+  { to: "/job-match" as const, label: "Job Match Score", icon: Target, desc: "How well does your CV fit this role?", accent: "from-primary-glow to-primary" },
+  { to: "/interview" as const, label: "Interview Practice", icon: Mic, desc: "Live AI mock interviews with feedback.", accent: "from-primary to-primary-glow" },
+  { to: "/roadmap" as const, label: "Career Roadmap", icon: MapIcon, desc: "Step-by-step plan to your next role.", accent: "from-primary-glow to-primary" },
+  { to: "/tracker" as const, label: "Application Tracker", icon: ListChecks, desc: "Track every job you apply to.", accent: "from-primary to-primary-glow" },
 ];
 
 function Dashboard() {
