@@ -1,20 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Sparkles, Check } from "lucide-react";
+import { FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks, Sparkles, Check, Wand2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "NextCareer — Land Your Next Role with AI" },
-      { name: "description", content: "AI career coach: ATS-friendly resumes, tailored cover letters, interview practice, job match scoring, and career roadmaps." },
+      { name: "description", content: "AI career coach: Smart Apply (one-click tailored CV + cover letter + match score + salary), ATS resumes, mock interviews, job match scoring, and career roadmaps." },
       { property: "og:title", content: "NextCareer — Land Your Next Role with AI" },
-      { property: "og:description", content: "Your AI career coach in your pocket. Resume builder, cover letters, interviews and more." },
+      { property: "og:description", content: "Your AI career coach in your pocket. One-click Smart Apply, resumes, cover letters, interviews and more." },
     ],
   }),
   component: Landing,
 });
 
 const features = [
+  { icon: Wand2, title: "Smart Apply", desc: "Paste a job link. Get a tailored CV, cover letter, match score and salary range — in seconds.", to: "/smart-apply" as const },
   { icon: FileText, title: "CV Builder", desc: "Upload your CV or start from scratch. AI rewrites for ATS and clarity.", to: "/cv-builder" as const },
   { icon: MessageSquare, title: "Cover Letters", desc: "Paste a job description. Get a tailored letter in seconds.", to: "/cover-letter" as const },
   { icon: Target, title: "Job Match Score", desc: "See how well your CV fits any posting — with missing keywords.", to: "/job-match" as const },
