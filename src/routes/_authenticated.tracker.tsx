@@ -149,7 +149,14 @@ function Page() {
                     <td className="p-3 text-muted-foreground">{a.interview_date ?? "—"}</td>
                     <td className="p-3 text-muted-foreground">{a.follow_up_date ?? "—"}</td>
                     <td className="p-3 text-right">
-                      <Button variant="ghost" size="icon" onClick={() => del.mutate(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <div className="flex items-center justify-end gap-1">
+                        {packByApp.get(a.id) && (
+                          <Button variant="ghost" size="icon" title="View application pack" onClick={() => setOpenPack(packByApp.get(a.id))}>
+                            <FileText className="h-4 w-4 text-primary-glow" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={() => del.mutate(a.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -158,6 +165,39 @@ function Page() {
           </div>
         )}
       </div>
+
+      <Dialog open={!!openPack} onOpenChange={(v) => !v && setOpenPack(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{openPack?.job_company} · {openPack?.job_role}</DialogTitle>
+          </DialogHeader>
+          {openPack && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-2 py-1 rounded-full bg-primary/20 text-primary-glow">Match {openPack.match_score}%</span>
+                {openPack.salary_low && openPack.salary_high && (
+                  <span className="px-2 py-1 rounded-full bg-success/20 text-success">
+                    {openPack.salary_currency} {Math.round(openPack.salary_low).toLocaleString()}–{Math.round(openPack.salary_high).toLocaleString()} / {openPack.salary_period}
+                  </span>
+                )}
+                {openPack.job_url && (
+                  <a href={openPack.job_url} target="_blank" rel="noopener" className="px-2 py-1 rounded-full bg-secondary text-foreground inline-flex items-center gap-1">
+                    Job posting <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+              <section>
+                <h4 className="text-sm font-semibold mb-2">Tailored CV</h4>
+                <pre className="whitespace-pre-wrap text-sm font-sans bg-secondary/40 rounded-xl p-4">{openPack.tailored_cv}</pre>
+              </section>
+              <section>
+                <h4 className="text-sm font-semibold mb-2">Cover letter</h4>
+                <pre className="whitespace-pre-wrap text-sm font-sans bg-secondary/40 rounded-xl p-4">{openPack.cover_letter}</pre>
+              </section>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
