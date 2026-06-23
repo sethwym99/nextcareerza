@@ -9,6 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,12 +25,33 @@ import { Route as AuthenticatedSmartApplyRouteImport } from './routes/_authentic
 import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated.roadmap'
 import { Route as AuthenticatedJobMatchRouteImport } from './routes/_authenticated.job-match'
 import { Route as AuthenticatedInterviewRouteImport } from './routes/_authenticated.interview'
+import { Route as AuthenticatedDeleteAccountRouteImport } from './routes/_authenticated.delete-account'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCvBuilderRouteImport } from './routes/_authenticated.cv-builder'
 import { Route as AuthenticatedCoverLetterRouteImport } from './routes/_authenticated.cover-letter'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
 import { Route as ApiPublicPaymentsRouteImport } from './routes/api/public/payments'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -86,6 +111,12 @@ const AuthenticatedInterviewRoute = AuthenticatedInterviewRouteImport.update({
   path: '/interview',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDeleteAccountRoute =
+  AuthenticatedDeleteAccountRouteImport.update({
+    id: '/delete-account',
+    path: '/delete-account',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -116,10 +147,15 @@ const ApiPublicPaymentsRoute = ApiPublicPaymentsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/cover-letter': typeof AuthenticatedCoverLetterRoute
   '/cv-builder': typeof AuthenticatedCvBuilderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/delete-account': typeof AuthenticatedDeleteAccountRoute
   '/interview': typeof AuthenticatedInterviewRoute
   '/job-match': typeof AuthenticatedJobMatchRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
@@ -134,10 +170,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/cover-letter': typeof AuthenticatedCoverLetterRoute
   '/cv-builder': typeof AuthenticatedCvBuilderRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/delete-account': typeof AuthenticatedDeleteAccountRoute
   '/interview': typeof AuthenticatedInterviewRoute
   '/job-match': typeof AuthenticatedJobMatchRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
@@ -154,10 +195,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/support': typeof SupportRoute
+  '/terms': typeof TermsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/cover-letter': typeof AuthenticatedCoverLetterRoute
   '/_authenticated/cv-builder': typeof AuthenticatedCvBuilderRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/delete-account': typeof AuthenticatedDeleteAccountRoute
   '/_authenticated/interview': typeof AuthenticatedInterviewRoute
   '/_authenticated/job-match': typeof AuthenticatedJobMatchRoute
   '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
@@ -174,10 +220,15 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/privacy'
+    | '/reset-password'
+    | '/support'
+    | '/terms'
     | '/billing'
     | '/cover-letter'
     | '/cv-builder'
     | '/dashboard'
+    | '/delete-account'
     | '/interview'
     | '/job-match'
     | '/roadmap'
@@ -192,10 +243,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/privacy'
+    | '/reset-password'
+    | '/support'
+    | '/terms'
     | '/billing'
     | '/cover-letter'
     | '/cv-builder'
     | '/dashboard'
+    | '/delete-account'
     | '/interview'
     | '/job-match'
     | '/roadmap'
@@ -211,10 +267,15 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/privacy'
+    | '/reset-password'
+    | '/support'
+    | '/terms'
     | '/_authenticated/billing'
     | '/_authenticated/cover-letter'
     | '/_authenticated/cv-builder'
     | '/_authenticated/dashboard'
+    | '/_authenticated/delete-account'
     | '/_authenticated/interview'
     | '/_authenticated/job-match'
     | '/_authenticated/roadmap'
@@ -231,6 +292,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SupportRoute: typeof SupportRoute
+  TermsRoute: typeof TermsRoute
   ApiInterviewRoute: typeof ApiInterviewRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiTtsRoute: typeof ApiTtsRoute
@@ -239,6 +304,34 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -323,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInterviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/delete-account': {
+      id: '/_authenticated/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof AuthenticatedDeleteAccountRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -366,6 +466,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCoverLetterRoute: typeof AuthenticatedCoverLetterRoute
   AuthenticatedCvBuilderRoute: typeof AuthenticatedCvBuilderRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDeleteAccountRoute: typeof AuthenticatedDeleteAccountRoute
   AuthenticatedInterviewRoute: typeof AuthenticatedInterviewRoute
   AuthenticatedJobMatchRoute: typeof AuthenticatedJobMatchRoute
   AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
@@ -379,6 +480,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCoverLetterRoute: AuthenticatedCoverLetterRoute,
   AuthenticatedCvBuilderRoute: AuthenticatedCvBuilderRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDeleteAccountRoute: AuthenticatedDeleteAccountRoute,
   AuthenticatedInterviewRoute: AuthenticatedInterviewRoute,
   AuthenticatedJobMatchRoute: AuthenticatedJobMatchRoute,
   AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
@@ -395,6 +497,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SupportRoute: SupportRoute,
+  TermsRoute: TermsRoute,
   ApiInterviewRoute: ApiInterviewRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiTtsRoute: ApiTtsRoute,

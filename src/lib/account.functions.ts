@@ -11,24 +11,25 @@ export const deleteAccount = createServerFn({ method: "POST" })
     const userId = context.userId;
 
     // Best-effort wipe of user-owned rows. RLS scopes these to the user.
-    const tables = [
+    const userScoped = [
       "application_packs",
       "applications",
       "usage_events",
       "payment_events",
-      "profiles",
     ] as const;
-    for (const t of tables) {
+    for (const t of userScoped) {
       try {
         await context.supabase.from(t).delete().eq("user_id", userId);
       } catch (e) {
         console.warn(`[deleteAccount] wipe ${t} failed`, e);
       }
     }
-    // profiles uses `id`, not `user_id`
+    // profiles is keyed by `id` (= auth user id)
     try {
       await context.supabase.from("profiles").delete().eq("id", userId);
-    } catch {}
+    } catch (e) {
+      console.warn("[deleteAccount] wipe profiles failed", e);
+    }
 
     // Delete the auth user with the service-role client.
     try {
