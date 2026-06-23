@@ -133,7 +133,12 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} NextCareer
+        <div className="space-x-4">
+          <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+          <Link to="/terms" className="hover:text-foreground">Terms</Link>
+          <Link to="/support" className="hover:text-foreground">Support</Link>
+        </div>
+        <div className="mt-3">© {new Date().getFullYear()} NextCareer</div>
       </footer>
     </div>
   );

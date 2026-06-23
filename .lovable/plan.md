@@ -1,91 +1,115 @@
-## Smart Apply — the differentiator
+# Make NextCareer ready for Play Store & App Store
 
-Right now NextCareer has six separate tools the user has to run one-by-one. A real "game changer" for job seekers is collapsing the whole apply-to-a-job workflow into a single screen:
-
-> Paste a job link → in ~15 seconds get a tailored CV, a tailored cover letter, a match score with missing keywords, and a salary range — then save the whole pack to your tracker with one click.
-
-This is the kind of thing recruiting tools like Teal / Huntr / Simplify charge for, and nothing in the current product matches it. It reuses the AI functions we already have and adds two new pieces (job-URL ingestion + salary estimate). Scope is medium: 1 new route, 2 new server functions, 1 schema change, small tracker upgrade.
-
-### What the user sees
-
-New route `/smart-apply` (added to dashboard bento + landing features):
-
-1. Paste a job posting URL **or** paste the description text.
-2. App fetches the page, AI extracts: company, role, location, seniority, required skills, salary if listed.
-3. Side-by-side panel renders:
-   - **Match score** (reuses `jobMatchScore`) with matched / missing keywords.
-   - **Tailored CV** (reuses `analyzeCv` with the job context — new optional `jobContext` arg) shown in a diff-style view vs. the user's saved CV.
-   - **Tailored cover letter** (reuses `generateCoverLetter`).
-   - **Salary insight**: AI-estimated range for that role + seniority + location, with a "based on public data" disclaimer.
-4. One button: **Save to tracker** → creates an `applications` row prefilled (company, role, URL, status `applied`, date today) AND stores the generated pack so the user can reopen it from the tracker.
-
-### Tracker upgrade
-
-Each tracker row gets a "View application pack" action that opens the saved tailored CV + cover letter + match report. This makes the tracker actually useful instead of being a glorified spreadsheet.
-
-### Saved CV
-
-For Smart Apply to work in one click, the user needs a CV on file. Add a tiny "My CV" section on the dashboard: paste once, stored on `profiles.base_cv_text`, reused by Smart Apply, CV Builder, Job Match, and Cover Letter (auto-fills those fields too — a nice quality-of-life win across the whole app).
-
-### Free vs Premium
-
-- Free: 3 Smart Apply runs / month (counts as one `smart_apply` usage event).
-- Premium: unlimited + salary insight + saved pack history.
-
-This gives Premium a concrete "save 30 min per application" pitch instead of just "unlimited".
+You'll wrap the existing web app with **Capacitor** (one codebase, two stores), tighten the mobile UX, add push notifications, and ship the legal pages + store assets reviewers require. Below is everything I'd add/improve, grouped so you can approve all or pick parts.
 
 ---
 
-## Technical notes
+## 1. Wrap the app with Capacitor (required for both stores)
 
-**New server functions** (`src/lib/ai.functions.ts` or new `smart-apply.functions.ts`):
+Capacitor turns the deployed web app into a real iOS + Android binary you can submit.
 
-- `ingestJobUrl({ url })` — server-side `fetch` of the URL, strip to text (regex + DOMParser-free heuristic; no headless browser, Cloudflare worker safe), then AI extract → `{ company, role, location, seniority, requiredSkills[], salaryRaw?, descriptionText }`. Falls back gracefully if the site blocks scraping (user can paste text instead).
-- `smartApply({ jobUrl?, jobText?, cvText })` — orchestrates: ingest (if URL) → `jobMatchScore` → tailored CV rewrite → cover letter → salary estimate. Returns one bundled object. Logs `smart_apply` usage, enforces free limit (3/mo).
-- `saveApplicationPack({ applicationId, pack })` — writes pack JSON to new `application_packs` row.
+- Add Capacitor (`@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`).
+- `capacitor.config.ts` with `appId: "one.nextcareer.app"`, `appName: "NextCareer"`, `webDir: "dist"`, server URL pointing at `https://nextcareer.one` (so the app always serves your latest deploy without re-submitting to stores for every change).
+- Generate native iOS (Xcode) + Android (Android Studio) shells.
+- Splash screen + adaptive icon configured from `/logo.png`.
+- Status bar plugin so the dark theme matches the OS chrome.
+- Build docs in `README.md` for how to run `npx cap sync && npx cap open ios|android`.
 
-**Schema migration**:
+You'll need a Mac + Apple Developer ($99/yr) and a Play Console account ($25 one-time) to actually submit — I can't do that part from here, but the project will be ready to open in Xcode/Android Studio.
 
-```sql
-ALTER TABLE public.profiles ADD COLUMN base_cv_text text;
+## 2. Mobile-first UI polish
 
-CREATE TABLE public.application_packs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  application_id uuid REFERENCES public.applications(id) ON DELETE CASCADE,
-  job_url text,
-  job_company text,
-  job_role text,
-  match_score int,
-  tailored_cv text,
-  cover_letter text,
-  salary_low numeric,
-  salary_high numeric,
-  salary_currency text,
-  raw jsonb NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.application_packs TO authenticated;
-GRANT ALL ON public.application_packs TO service_role;
-ALTER TABLE public.application_packs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own packs" ON public.application_packs
-  FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-```
+The current layout works on mobile but feels like a desktop site shrunk down. Changes:
 
-**New route**: `src/routes/_authenticated.smart-apply.tsx` (under the existing auth gate). Add link in dashboard `tools` array + landing `features` array.
+- **Bottom tab bar** on mobile (Dashboard, Smart Apply, Tracker, Profile) replacing the hamburger drawer. Drawer stays for "more" items (CV Builder, Cover Letter, Interview, Roadmap).
+- **Safe-area insets** (`env(safe-area-inset-*)`) so content doesn't sit under the notch / home indicator.
+- **Tap targets** ≥ 44px everywhere, larger buttons in forms.
+- **Pull-to-refresh** on Tracker and Dashboard usage cards.
+- **Sticky CTA** on Smart Apply ("Generate" button pinned above keyboard).
+- **Sheet-style modals** (vaul) instead of centered dialogs on small screens.
+- Replace the desktop header on `/dashboard` with a compact mobile app-bar.
+- Loading skeletons in place of "Loading…" text.
 
-**Tracker route**: extend with a Sheet/Dialog that loads the matching `application_packs` row.
+## 3. Push notifications
 
-**URL ingestion safety**: cap response size at ~512KB, 8s timeout, strip scripts/styles, send first ~12k chars to the model. If the page is JS-only and returns no useful text, surface a friendly "Couldn't read this page — paste the description below" fallback.
+Using Capacitor Push Notifications + Firebase Cloud Messaging (free):
 
-**No scraping infrastructure / no third-party API keys** — keeps cost flat and stays within the existing Lovable AI Gateway credits.
+- New `device_tokens` table (`user_id`, `token`, `platform`, timestamps) + RLS.
+- `registerPushToken` server function called on app launch.
+- Server-side trigger points (server function + scheduled cron in Lovable Cloud):
+  - **Interview reminder** the day before an interview saved in Tracker.
+  - **Follow-up nudge** 7 days after `applied` status with no update.
+  - **Monthly usage reset** notification on the 1st.
+  - **Smart Apply finished** if user backgrounded the app mid-run.
+- In-app **Notification settings** screen so users can toggle categories (Apple requires a clear opt-out).
+
+## 4. Legal & policy pages (Apple/Google will reject without these)
+
+- `/privacy` — privacy policy (covers Lovable Cloud auth, AI processing of CV text via Lovable AI Gateway, payment data via PayFast, push tokens).
+- `/terms` — terms of service.
+- `/support` — support email + FAQ (Apple requires a working support URL).
+- `/delete-account` — in-app account deletion flow (Apple 5.1.1(v) **and** Google now require this; not just "email us"). Wires to a `deleteAccount` server function that purges profile, applications, packs, usage, tokens.
+- Link all four from the sidebar footer and landing page footer.
+
+## 5. Subscription / payment compliance
+
+This is the biggest review risk. Right now you charge R99/mo via PayFast (web).
+
+- **iOS app build**: Apple requires StoreKit/IAP for digital subscriptions or they reject. Two safe options:
+  1. **Reader-app pattern**: hide the "Subscribe" button inside the iOS build, let users sign up on the web, and just let them sign in on iOS (cleanest, no IAP integration).
+  2. **Add StoreKit IAP** for the iOS build (significant extra work, 30/15% Apple cut). I'd recommend option 1 for v1.
+- **Android build**: Google Play allows external billing for non-game apps in many regions, but you must add Google Play Billing or use the User Choice Billing program to be safe. Easiest v1: same reader pattern (subscribe on web only).
+- Add a clear **"Restore purchases / Refresh subscription"** button on the Billing screen so users can re-sync after subscribing on web.
+
+## 6. Account & auth hardening
+
+- **Sign in with Apple** — Apple requires it on iOS if you offer any other social login. (You currently have email only, so this is only needed once you add Google.) Recommend enabling Apple auth in Lovable Cloud now so it's ready.
+- **Forgot password** flow on `/auth` (missing today).
+- **Email verification** on signup.
+- **Re-auth before account delete**.
+
+## 7. Store assets you'll need ready
+
+- App icon: 1024×1024 (iOS), 512×512 + adaptive (Android). Generate from your existing logo.
+- iOS screenshots: 6.7", 6.5", 5.5" iPhone + iPad if you submit for iPad.
+- Android screenshots: phone + 7" + 10" tablet, feature graphic 1024×500.
+- Short description (80 chars), full description (4000 chars), keywords, category = **Business** or **Productivity**.
+- Promo video (optional but boosts conversion).
+
+I can generate the icon set, the feature graphic, and 4–6 framed screenshots in-app.
+
+## 8. App-stability & UX polish (mobile reviewers test for these)
+
+- Global **error boundary** with a "Report problem" button.
+- Empty states for Tracker, Smart Apply history, Interview history (currently blank screens).
+- **Onboarding** (3 cards on first launch: "Paste CV → Smart Apply → Track").
+- "What's new" modal after updates.
+- Crash/usage analytics — drop-in via a privacy-friendly provider (Plausible / PostHog) so you can actually debug field issues.
+
+## 9. SEO / web side (since the web app is the source of truth)
+
+- Add `/privacy`, `/terms`, `/support` to `sitemap.xml`.
+- Run an SEO scan once content above is in place.
 
 ---
 
-## Out of scope (for this build)
+## Suggested build order
 
-- True auto-apply (filling forms on LinkedIn/Indeed) — legally and technically a different beast.
-- Browser extension / job-board crawler.
-- Chrome/Edge extension that injects Smart Apply on LinkedIn — good follow-up, not this turn.
+If you approve, I'd implement in roughly this order so each step ships something usable:
 
-If you approve, I'll implement in this order: migration → server functions → Smart Apply route → dashboard + landing surface → tracker pack viewer → saved-CV section.
+1. Mobile UI polish + bottom tab bar (1 turn)
+2. Legal pages + delete-account flow (1 turn)
+3. Forgot password + Sign in with Apple wiring (1 turn)
+4. Capacitor setup + icons/splash + native projects (1 turn)
+5. Push notifications end-to-end (1 turn)
+6. Store screenshots + icon generation (1 turn)
+
+## Out of scope for this plan
+
+- Actual store submission (needs your Apple/Google accounts).
+- Native StoreKit / Google Play Billing IAP — recommend reader-app pattern for v1.
+- LinkedIn/Indeed scraping or browser extension.
+
+---
+
+**Tell me which sections you want and in what order, or just say "do all of it in the suggested order" and I'll start with step 1.**
