@@ -81,20 +81,8 @@ async function enforceSmartLimit(supabase: any, userId: string) {
     .select("plan")
     .eq("id", userId)
     .maybeSingle();
-  if (profile?.plan === "premium") return;
-  const monthStart = new Date();
-  monthStart.setUTCDate(1);
-  monthStart.setUTCHours(0, 0, 0, 0);
-  const { count } = await supabase
-    .from("usage_events")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("feature", "smart_apply")
-    .gte("created_at", monthStart.toISOString());
-  if ((count ?? 0) >= FREE_LIMIT) {
-    throw new Error(
-      `Free plan: ${FREE_LIMIT} Smart Apply runs per month. Upgrade to Premium for unlimited.`,
-    );
+  if (profile?.plan !== "premium") {
+    throw new Error("Smart Apply is a Premium feature. Upgrade to unlock.");
   }
 }
 
