@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getGateway } from "./ai-gateway.server";
 
 const MODEL = "google/gemini-3-flash-preview";
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 1;
 
 function parseJson<T>(text: string): T | null {
   const cleaned = text.replace(/```json|```/g, "").trim();
