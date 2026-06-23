@@ -51,7 +51,7 @@ function Landing() {
         <div className="mx-auto max-w-5xl px-5 py-24 md:py-36 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur mb-6">
             <Sparkles className="h-3 w-3 text-primary-glow" />
-            Powered by Lovable AI
+            AI-Powered Career Tools
           </div>
           <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[1.05]">
             Land your <span className="text-gradient">next role</span>
@@ -133,7 +133,7 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} NextCareer. Built with Lovable.
+        © {new Date().getFullYear()} NextCareer
       </footer>
     </div>
   );
