@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
-  Wand2, Check, Star, Download, Wifi, BatteryFull, Signal,
+  Wand2, Check, Download, Wifi, BatteryFull, Signal,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -28,8 +28,8 @@ const apps = [
 ];
 
 function Time() {
-  const d = new Date();
-  return <span>{d.getHours().toString().padStart(2, "0")}:{d.getMinutes().toString().padStart(2, "0")}</span>;
+  // Static time avoids SSR/client hydration mismatch inside the phone mockup
+  return <span>09:41</span>;
 }
 
 function Landing() {
@@ -105,7 +105,7 @@ function Landing() {
           {/* Copy */}
           <div className="order-1 md:order-2 text-center md:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur mb-5">
-              <Star className="h-3 w-3 text-primary-glow fill-current" /> 4.9 · Built for South African job-seekers
+              Built for job seekers
             </div>
             <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight leading-[1.05]">
               Your AI career coach,
