@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
-  Wand2, Check, Star, Download, Wifi, BatteryFull, Signal,
+  Wand2, Check, Download, Wifi, BatteryFull, Signal,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -28,8 +28,8 @@ const apps = [
 ];
 
 function Time() {
-  const d = new Date();
-  return <span>{d.getHours().toString().padStart(2, "0")}:{d.getMinutes().toString().padStart(2, "0")}</span>;
+  // Static time avoids SSR/client hydration mismatch inside the phone mockup
+  return <span>09:41</span>;
 }
 
 function Landing() {
