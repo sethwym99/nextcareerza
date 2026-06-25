@@ -35,8 +35,15 @@ function Time() {
 }
 
 function Landing() {
+  const { session, loading } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!loading && session) navigate({ to: "/dashboard", replace: true });
+  }, [loading, session, navigate]);
+  if (loading || session) {
+    return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
+  }
   return (
-    <div className="min-h-screen relative overflow-hidden">
       <div className="absolute inset-0 -z-10" style={{ background: "var(--gradient-hero)" }} />
       <div className="absolute inset-0 -z-10 opacity-40" style={{
         backgroundImage: "radial-gradient(circle at 20% 10%, oklch(0.72 0.2 290 / 0.35), transparent 40%), radial-gradient(circle at 80% 30%, oklch(0.62 0.22 277 / 0.3), transparent 45%)",
