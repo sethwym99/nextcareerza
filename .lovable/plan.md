@@ -1,115 +1,32 @@
-# Make NextCareer ready for Play Store & App Store
+## Goal
 
-You'll wrap the existing web app with **Capacitor** (one codebase, two stores), tighten the mobile UX, add push notifications, and ship the legal pages + store assets reviewers require. Below is everything I'd add/improve, grouped so you can approve all or pick parts.
+Separate the "marketing website" from the "real app" so logged-in users get a native app feel, not the landing page.
 
----
+## Changes
 
-## 1. Wrap the app with Capacitor (required for both stores)
+### 1. Auto-redirect logged-in users away from `/`
+- In `src/routes/index.tsx`, check session via `useAuth()`. If a session exists, `navigate({ to: "/dashboard", replace: true })` on mount.
+- Anonymous visitors keep seeing the current marketing landing page (with phone mockup + "Get the app").
 
-Capacitor turns the deployed web app into a real iOS + Android binary you can submit.
+### 2. Rebuild `/dashboard` as a native app home screen
+Replace the current bento-card dashboard in `src/routes/_authenticated.dashboard.tsx` with an iOS/Android-style home screen:
 
-- Add Capacitor (`@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android`).
-- `capacitor.config.ts` with `appId: "one.nextcareer.app"`, `appName: "NextCareer"`, `webDir: "dist"`, server URL pointing at `https://nextcareer.one` (so the app always serves your latest deploy without re-submitting to stores for every change).
-- Generate native iOS (Xcode) + Android (Android Studio) shells.
-- Splash screen + adaptive icon configured from `/logo.png`.
-- Status bar plugin so the dark theme matches the OS chrome.
-- Build docs in `README.md` for how to run `npx cap sync && npx cap open ios|android`.
+- **Top greeting strip**: small "Good morning, {firstName}" + date, plan badge on the right.
+- **Quick stats row** (compact, 2 pills): CV analyses used `x/3`, Interviews used `x/3`. Tap → `/billing`. Hidden for premium; replaced with a single "Premium ✨ Unlimited" pill.
+- **App icon grid** (the main visual): 4-column grid of large rounded gradient icon tiles (same colors as the landing mockup), each with label underneath. Tapping opens the tool. Tools: Smart Apply, CV Builder, Cover Letter, Job Match, Interview, Roadmap, Tracker, Upgrade (Crown icon, gold gradient).
+- **Featured card** below the grid: Smart Apply highlight ("Paste a job link → tailored CV in seconds") as a wide gradient card.
+- **No** bento cards, no big "Your career, accelerated" headline — that's website copy. Keep it tight and app-like.
 
-You'll need a Mac + Apple Developer ($99/yr) and a Play Console account ($25 one-time) to actually submit — I can't do that part from here, but the project will be ready to open in Xcode/Android Studio.
+Spacing tuned for mobile first (the bottom tab bar already exists in `_authenticated.tsx`).
 
-## 2. Mobile-first UI polish
+### 3. Keep the rest as-is
+- Bottom tab bar, sidebar drawer, paywall: no changes.
+- Landing page: no changes beyond the redirect guard.
+- "Get the app" CTAs on the landing page now effectively mean "Sign in / Sign up" for new visitors, which is correct.
 
-The current layout works on mobile but feels like a desktop site shrunk down. Changes:
+## Files touched
 
-- **Bottom tab bar** on mobile (Dashboard, Smart Apply, Tracker, Profile) replacing the hamburger drawer. Drawer stays for "more" items (CV Builder, Cover Letter, Interview, Roadmap).
-- **Safe-area insets** (`env(safe-area-inset-*)`) so content doesn't sit under the notch / home indicator.
-- **Tap targets** ≥ 44px everywhere, larger buttons in forms.
-- **Pull-to-refresh** on Tracker and Dashboard usage cards.
-- **Sticky CTA** on Smart Apply ("Generate" button pinned above keyboard).
-- **Sheet-style modals** (vaul) instead of centered dialogs on small screens.
-- Replace the desktop header on `/dashboard` with a compact mobile app-bar.
-- Loading skeletons in place of "Loading…" text.
+- `src/routes/index.tsx` — add auth redirect at the top of `Landing()`.
+- `src/routes/_authenticated.dashboard.tsx` — rewrite layout to icon-grid home screen.
 
-## 3. Push notifications
-
-Using Capacitor Push Notifications + Firebase Cloud Messaging (free):
-
-- New `device_tokens` table (`user_id`, `token`, `platform`, timestamps) + RLS.
-- `registerPushToken` server function called on app launch.
-- Server-side trigger points (server function + scheduled cron in Lovable Cloud):
-  - **Interview reminder** the day before an interview saved in Tracker.
-  - **Follow-up nudge** 7 days after `applied` status with no update.
-  - **Monthly usage reset** notification on the 1st.
-  - **Smart Apply finished** if user backgrounded the app mid-run.
-- In-app **Notification settings** screen so users can toggle categories (Apple requires a clear opt-out).
-
-## 4. Legal & policy pages (Apple/Google will reject without these)
-
-- `/privacy` — privacy policy (covers Lovable Cloud auth, AI processing of CV text via Lovable AI Gateway, payment data via PayFast, push tokens).
-- `/terms` — terms of service.
-- `/support` — support email + FAQ (Apple requires a working support URL).
-- `/delete-account` — in-app account deletion flow (Apple 5.1.1(v) **and** Google now require this; not just "email us"). Wires to a `deleteAccount` server function that purges profile, applications, packs, usage, tokens.
-- Link all four from the sidebar footer and landing page footer.
-
-## 5. Subscription / payment compliance
-
-This is the biggest review risk. Right now you charge R99/mo via PayFast (web).
-
-- **iOS app build**: Apple requires StoreKit/IAP for digital subscriptions or they reject. Two safe options:
-  1. **Reader-app pattern**: hide the "Subscribe" button inside the iOS build, let users sign up on the web, and just let them sign in on iOS (cleanest, no IAP integration).
-  2. **Add StoreKit IAP** for the iOS build (significant extra work, 30/15% Apple cut). I'd recommend option 1 for v1.
-- **Android build**: Google Play allows external billing for non-game apps in many regions, but you must add Google Play Billing or use the User Choice Billing program to be safe. Easiest v1: same reader pattern (subscribe on web only).
-- Add a clear **"Restore purchases / Refresh subscription"** button on the Billing screen so users can re-sync after subscribing on web.
-
-## 6. Account & auth hardening
-
-- **Sign in with Apple** — Apple requires it on iOS if you offer any other social login. (You currently have email only, so this is only needed once you add Google.) Recommend enabling Apple auth in Lovable Cloud now so it's ready.
-- **Forgot password** flow on `/auth` (missing today).
-- **Email verification** on signup.
-- **Re-auth before account delete**.
-
-## 7. Store assets you'll need ready
-
-- App icon: 1024×1024 (iOS), 512×512 + adaptive (Android). Generate from your existing logo.
-- iOS screenshots: 6.7", 6.5", 5.5" iPhone + iPad if you submit for iPad.
-- Android screenshots: phone + 7" + 10" tablet, feature graphic 1024×500.
-- Short description (80 chars), full description (4000 chars), keywords, category = **Business** or **Productivity**.
-- Promo video (optional but boosts conversion).
-
-I can generate the icon set, the feature graphic, and 4–6 framed screenshots in-app.
-
-## 8. App-stability & UX polish (mobile reviewers test for these)
-
-- Global **error boundary** with a "Report problem" button.
-- Empty states for Tracker, Smart Apply history, Interview history (currently blank screens).
-- **Onboarding** (3 cards on first launch: "Paste CV → Smart Apply → Track").
-- "What's new" modal after updates.
-- Crash/usage analytics — drop-in via a privacy-friendly provider (Plausible / PostHog) so you can actually debug field issues.
-
-## 9. SEO / web side (since the web app is the source of truth)
-
-- Add `/privacy`, `/terms`, `/support` to `sitemap.xml`.
-- Run an SEO scan once content above is in place.
-
----
-
-## Suggested build order
-
-If you approve, I'd implement in roughly this order so each step ships something usable:
-
-1. Mobile UI polish + bottom tab bar (1 turn)
-2. Legal pages + delete-account flow (1 turn)
-3. Forgot password + Sign in with Apple wiring (1 turn)
-4. Capacitor setup + icons/splash + native projects (1 turn)
-5. Push notifications end-to-end (1 turn)
-6. Store screenshots + icon generation (1 turn)
-
-## Out of scope for this plan
-
-- Actual store submission (needs your Apple/Google accounts).
-- Native StoreKit / Google Play Billing IAP — recommend reader-app pattern for v1.
-- LinkedIn/Indeed scraping or browser extension.
-
----
-
-**Tell me which sections you want and in what order, or just say "do all of it in the suggested order" and I'll start with step 1.**
+No backend, route tree, or auth changes.
