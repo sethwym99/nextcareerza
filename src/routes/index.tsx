@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { WebOnly } from "@/components/web-only";
+import { isNativeApp } from "@/lib/platform";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
   Wand2, Check, Download, Wifi, BatteryFull, Signal,
@@ -38,9 +40,15 @@ function Landing() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!loading && session) navigate({ to: "/dashboard", replace: true });
+    if (loading) return;
+    if (session) {
+      navigate({ to: "/dashboard", replace: true });
+    } else if (isNativeApp()) {
+      // Native app never shows the marketing landing — go straight to auth.
+      navigate({ to: "/auth", replace: true });
+    }
   }, [loading, session, navigate]);
-  if (loading || session) {
+  if (loading || session || (typeof window !== "undefined" && isNativeApp())) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
   }
   return (
