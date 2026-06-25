@@ -118,6 +118,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  useEffect(() => {
+    import("@/lib/native-shell").then((m) => m.initNativeShell(router)).catch(() => {});
+  }, [router]);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

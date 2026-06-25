@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { WebOnly } from "@/components/web-only";
+import { isNativeApp } from "@/lib/platform";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
   Wand2, Check, Download, Wifi, BatteryFull, Signal,
