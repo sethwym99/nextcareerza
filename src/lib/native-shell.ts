@@ -41,4 +41,17 @@ export async function initNativeShell(router: {
   } catch (e) {
     console.warn("BackButton init failed", e);
   }
+
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { configureIAP, hasActiveEntitlement } = await import("@/lib/iap");
+    const { data } = await supabase.auth.getUser();
+    const userId = data.user?.id ?? null;
+    await configureIAP(userId);
+    if (userId && (await hasActiveEntitlement())) {
+      await supabase.from("profiles").update({ plan: "premium" }).eq("id", userId);
+    }
+  } catch (e) {
+    console.warn("IAP sync failed", e);
+  }
 }
