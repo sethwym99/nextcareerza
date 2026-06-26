@@ -30,6 +30,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCvBuilderRouteImport } from './routes/_authenticated.cv-builder'
 import { Route as AuthenticatedCoverLetterRouteImport } from './routes/_authenticated.cover-letter'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
+import { Route as ApiPublicRevenuecatRouteImport } from './routes/api/public/revenuecat'
 import { Route as ApiPublicPaymentsRouteImport } from './routes/api/public/payments'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
@@ -139,6 +140,11 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicRevenuecatRoute = ApiPublicRevenuecatRouteImport.update({
+  id: '/api/public/revenuecat',
+  path: '/api/public/revenuecat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaymentsRoute = ApiPublicPaymentsRouteImport.update({
   id: '/api/public/payments',
   path: '/api/public/payments',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
+  '/api/public/revenuecat': typeof ApiPublicRevenuecatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
+  '/api/public/revenuecat': typeof ApiPublicRevenuecatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
+  '/api/public/revenuecat': typeof ApiPublicRevenuecatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/tts'
     | '/api/public/payments'
+    | '/api/public/revenuecat'
     | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/tts'
     | '/api/public/payments'
+    | '/api/public/revenuecat'
     | '/lovable/email/queue/process'
   id:
     | '__root__'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/tts'
     | '/api/public/payments'
+    | '/api/public/revenuecat'
     | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
@@ -313,6 +325,7 @@ export interface RootRouteChildren {
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiTtsRoute: typeof ApiTtsRoute
   ApiPublicPaymentsRoute: typeof ApiPublicPaymentsRoute
+  ApiPublicRevenuecatRoute: typeof ApiPublicRevenuecatRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
@@ -465,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/revenuecat': {
+      id: '/api/public/revenuecat'
+      path: '/api/public/revenuecat'
+      fullPath: '/api/public/revenuecat'
+      preLoaderRoute: typeof ApiPublicRevenuecatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments': {
       id: '/api/public/payments'
       path: '/api/public/payments'
@@ -526,8 +546,19 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiTtsRoute: ApiTtsRoute,
   ApiPublicPaymentsRoute: ApiPublicPaymentsRoute,
+  ApiPublicRevenuecatRoute: ApiPublicRevenuecatRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

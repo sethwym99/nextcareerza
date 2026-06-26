@@ -41,4 +41,13 @@ export async function initNativeShell(router: {
   } catch (e) {
     console.warn("BackButton init failed", e);
   }
+
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { configureIAP } = await import("@/lib/iap");
+    const { data } = await supabase.auth.getUser();
+    await configureIAP(data.user?.id ?? null);
+  } catch (e) {
+    console.warn("IAP init failed", e);
+  }
 }
