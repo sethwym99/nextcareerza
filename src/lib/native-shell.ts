@@ -44,14 +44,10 @@ export async function initNativeShell(router: {
 
   try {
     const { supabase } = await import("@/integrations/supabase/client");
-    const { configureIAP, hasActiveEntitlement } = await import("@/lib/iap");
+    const { configureIAP } = await import("@/lib/iap");
     const { data } = await supabase.auth.getUser();
-    const userId = data.user?.id ?? null;
-    await configureIAP(userId);
-    if (userId && (await hasActiveEntitlement())) {
-      await supabase.from("profiles").update({ plan: "premium" }).eq("id", userId);
-    }
+    await configureIAP(data.user?.id ?? null);
   } catch (e) {
-    console.warn("IAP sync failed", e);
+    console.warn("IAP init failed", e);
   }
 }
