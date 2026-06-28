@@ -23,12 +23,24 @@ export async function configureIAP(userId: string | null): Promise<void> {
       ? import.meta.env.VITE_REVENUECAT_IOS_KEY
       : import.meta.env.VITE_REVENUECAT_ANDROID_KEY;
   if (!apiKey) {
-    console.warn("[iap] RevenueCat API key missing for", platform);
+    // Only warn for the current platform so Android-only setups stay clean.
+    if (platform !== "web") {
+      console.warn("[iap] RevenueCat API key missing for", platform);
+    }
     return;
   }
   const Purchases = await getPurchases();
   await Purchases.configure({ apiKey, appUserID: userId ?? undefined });
   configured = true;
+}
+
+export function getIAPConfigStatus() {
+  const platform = nativePlatform();
+  const apiKey =
+    platform === "ios"
+      ? import.meta.env.VITE_REVENUECAT_IOS_KEY
+      : import.meta.env.VITE_REVENUECAT_ANDROID_KEY;
+  return { platform, configured, hasKey: Boolean(apiKey) };
 }
 
 export async function loadOfferings() {
