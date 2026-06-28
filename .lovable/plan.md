@@ -1,35 +1,29 @@
-# RevenueCat Setup Guide
+The user wants to focus exclusively on Google Play Store for RevenueCat native IAP and handle App Store later. The codebase already supports Android-only, but it can be clearer and more helpful when things aren't configured yet.
 
-You already have the code wired up (`src/lib/iap.ts`, `src/routes/_authenticated.upgrade.tsx`, `src/routes/api/public/revenuecat.ts`). What's left is configuration in the RevenueCat dashboard and pasting two keys into the project. No code changes needed yet — those come once you have Apple/Google developer accounts.
+## What will change
 
-## What you'll do in RevenueCat (no dev accounts needed yet)
+1. **Native upgrade empty-state guidance**
+   - When `loadOfferings()` returns no packages, show specific step-by-step instructions for Google Play + RevenueCat setup instead of the generic "Subscriptions are not available right now" message.
+   - Include: create products in Google Play Console, connect the service account in RevenueCat, copy the public SDK key (`goog_...`), and set it as `VITE_REVENUECAT_ANDROID_KEY`.
 
-1. **Create a free RevenueCat account** at revenuecat.com
-2. **Create a project** called "NextCareer"
-3. **Create an Entitlement** named exactly `premium` (this is what the code checks for)
-4. **Create an Offering** named `default` with one package: monthly Premium at R99/mo
-5. **Get your two public API keys** (Project Settings → API Keys):
-   - Apple App Store key (starts with `appl_`)
-   - Google Play Store key (starts with `goog_`)
-6. **Configure the webhook** (Project Settings → Integrations → Webhooks):
-   - URL: `https://nextcareer.one/api/public/revenuecat`
-   - Authorization header: `Bearer <REVENUECAT_WEBHOOK_AUTH value>` (already stored as a secret in your project)
+2. **IAP config — iOS truly optional**
+   - Update `src/lib/iap.ts` so that missing iOS keys do not produce console warnings on Android. The warning should only fire for the current platform.
 
-## What I'll do once you send the keys
+3. **RevenueCat debug panel (hidden in production)**
+   - Add a small, collapsible debug section on the native upgrade page that shows:
+     - Whether RevenueCat is configured
+     - The current platform
+     - Raw offering data (if any)
+   - This helps the user see exactly what's happening when they paste in the API key.
 
-- Add `VITE_REVENUECAT_IOS_KEY` and `VITE_REVENUECAT_ANDROID_KEY` to env so the native app can load offerings
-- Verify the webhook handler matches RevenueCat's payload shape
-- Test the upgrade screen renders the package once keys are in
+## What the user still needs to do themselves
+- Create subscription products in Google Play Console
+- Connect RevenueCat to Google Play (service account + JSON)
+- Create an entitlement named `premium` in RevenueCat
+- Paste the RevenueCat **public SDK key** (`goog_...`) into the project when they have it
 
-## What requires the developer accounts (later, not now)
+## No App Store changes
+- All iOS-related code stays as-is; it simply becomes silent/non-blocking when iOS keys are absent.
 
-- Creating the actual subscription products in App Store Connect + Google Play Console
-- Linking those products to the RevenueCat Offering
-- Testing real purchases in sandbox
-
-Until you have those, RevenueCat will show "no offerings available" in the native app — that's expected. The web PayFast flow keeps working in the meantime.
-
-## What I need from you next
-
-- Confirm the entitlement name `premium` and offering name `default` work for you (or tell me what you'd prefer)
-- Once you've made the RevenueCat account, paste the two public API keys here
+## Out of scope
+- We cannot create Google Play Console products or RevenueCat connections on the user's behalf. Those are external dashboard tasks.
