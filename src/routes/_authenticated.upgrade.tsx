@@ -1,12 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Sparkles, RotateCcw } from "lucide-react";
-import { isNativeApp } from "@/lib/platform";
+import {
+  Loader2,
+  Sparkles,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  Bug,
+} from "lucide-react";
+import { isNativeApp, nativePlatform } from "@/lib/platform";
 import {
   configureIAP,
   loadOfferings,
   purchasePackage,
   restorePurchases,
+  getIAPConfigStatus,
 } from "@/lib/iap";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -61,6 +69,8 @@ function NativeUpgrade() {
   const [loading, setLoading] = useState(true);
   const [packages, setPackages] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [rawOffering, setRawOffering] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -68,6 +78,7 @@ function NativeUpgrade() {
         await configureIAP(user?.id ?? null);
         const offering = await loadOfferings();
         setPackages(offering?.availablePackages ?? []);
+        setRawOffering(offering);
       } catch (e) {
         console.error(e);
         toast.error("Could not load subscription options");
@@ -88,7 +99,10 @@ function NativeUpgrade() {
         toast.error("Purchase did not complete");
       }
     } catch (e: any) {
-      if (e?.code !== "PURCHASE_CANCELLED" && !String(e?.message).toLowerCase().includes("cancel")) {
+      if (
+        e?.code !== "PURCHASE_CANCELLED" &&
+        !String(e?.message).toLowerCase().includes("cancel")
+      ) {
         toast.error(e?.message || "Purchase failed");
       }
     } finally {
@@ -113,6 +127,8 @@ function NativeUpgrade() {
     }
   };
 
+  const status = getIAPConfigStatus();
+
   return (
     <div className="min-h-[80vh] px-4 py-8 max-w-md mx-auto">
       <div className="text-center mb-8">
@@ -130,8 +146,36 @@ function NativeUpgrade() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : packages.length === 0 ? (
-        <div className="glass-card rounded-2xl p-6 text-center text-sm text-muted-foreground">
-          Subscriptions are not available right now. Please try again later.
+        <div className="glass-card rounded-2xl p-6 text-sm space-y-4">
+          <p className="font-semibold text-foreground">
+            Google Play subscriptions are not set up yet.
+          </p>
+          <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+            <li>
+              Create your subscription products in{" "}
+              <strong className="text-foreground">Google Play Console</strong>{" "}
+              (e.g. monthly Premium).
+            </li>
+            <li>
+              In{" "}
+              <strong className="text-foreground">RevenueCat</strong>, connect your
+              Google Play app using a service-account JSON key.
+            </li>
+            <li>
+              Make sure your RevenueCat offering contains at least one package
+              linked to a Google Play product.
+            </li>
+            <li>
+              Copy your RevenueCat{" "}
+              <strong className="text-foreground">public SDK key</strong>{" "}
+              (starts with <code>goog_</code>) and add it to this project as{" "}
+              <code>VITE_REVENUECAT_ANDROID_KEY</code>.
+            </li>
+          </ol>
+          <p className="text-xs text-muted-foreground pt-2">
+            Once configured, reopen this screen and the subscription options will
+            appear automatically.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -144,7 +188,9 @@ function NativeUpgrade() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold">{pkg.product.title || pkg.identifier}</div>
+                  <div className="font-semibold">
+                    {pkg.product.title || pkg.identifier}
+                  </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {pkg.product.description || "NextCareer Premium"}
                   </div>
@@ -170,8 +216,61 @@ function NativeUpgrade() {
         Restore purchases
       </button>
 
+      {import.meta.env.DEV && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowDebug((s) => !s)}
+            className="w-full inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Bug className="h-3.5 w-3.5" />
+            {showDebug ? "Hide debug info" : "Show debug info"}
+            {showDebug ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
+          </button>
+
+          {showDebug && (
+            <div className="mt-3 glass-card rounded-xl p-4 text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Platform</span>
+                <span className="font-mono">{nativePlatform()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">RevenueCat configured</span>
+                <span className="font-mono">
+                  {status.configured ? "Yes" : "No"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">API key present</span>
+                <span className="font-mono">
+                  {status.hasKey ? "Yes" : "No"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Packages loaded</span>
+                <span className="font-mono">{packages.length}</span>
+              </div>
+              {rawOffering && (
+                <details className="pt-2">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                    Raw offering JSON
+                  </summary>
+                  <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/30 p-2 text-[10px]">
+                    {JSON.stringify(rawOffering, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <p className="mt-6 text-xs text-muted-foreground text-center leading-relaxed">
-        Subscription auto-renews unless cancelled at least 24h before period ends. Manage in your device's subscription settings.
+        Subscription auto-renews unless cancelled at least 24h before period
+        ends. Manage in your device's subscription settings.
       </p>
     </div>
   );
