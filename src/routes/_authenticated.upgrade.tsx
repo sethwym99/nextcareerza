@@ -1,12 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Sparkles, RotateCcw } from "lucide-react";
-import { isNativeApp } from "@/lib/platform";
+import {
+  Loader2,
+  Sparkles,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+  Bug,
+} from "lucide-react";
+import { isNativeApp, nativePlatform } from "@/lib/platform";
 import {
   configureIAP,
   loadOfferings,
   purchasePackage,
   restorePurchases,
+  getIAPConfigStatus,
 } from "@/lib/iap";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
