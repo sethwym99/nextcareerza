@@ -265,6 +265,39 @@ export type Database = {
         }
         Relationships: []
       }
+      play_purchases: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string | null
+          product_id: string
+          purchase_token: string
+          raw: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          product_id: string
+          purchase_token: string
+          raw?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          product_id?: string
+          purchase_token?: string
+          raw?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           base_cv_text: string | null
@@ -273,6 +306,7 @@ export type Database = {
           full_name: string | null
           id: string
           plan: string
+          premium_expires_at: string | null
           updated_at: string
         }
         Insert: {
@@ -282,6 +316,7 @@ export type Database = {
           full_name?: string | null
           id: string
           plan?: string
+          premium_expires_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -291,6 +326,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           plan?: string
+          premium_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []

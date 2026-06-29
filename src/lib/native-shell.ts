@@ -43,11 +43,11 @@ export async function initNativeShell(router: {
   }
 
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    const { configureIAP } = await import("@/lib/iap");
-    const { data } = await supabase.auth.getUser();
-    await configureIAP(data.user?.id ?? null);
+    if (nativePlatform() === "android") {
+      const { initBilling } = await import("@/lib/play-billing");
+      await initBilling();
+    }
   } catch (e) {
-    console.warn("IAP init failed", e);
+    console.warn("Play Billing init failed", e);
   }
 }

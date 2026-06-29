@@ -10,13 +10,14 @@ import {
 } from "lucide-react";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import {
-  configureIAP,
-  loadOfferings,
-  purchasePackage,
-  restorePurchases,
-  getIAPConfigStatus,
-} from "@/lib/iap";
-import { useAuth } from "@/hooks/use-auth";
+  initBilling,
+  getOfferings,
+  purchase,
+  restore,
+  getBillingStatus,
+  PRODUCT_IDS,
+  type PlayProduct,
+} from "@/lib/play-billing";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -24,11 +25,15 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
   component: Upgrade,
 });
 
-const NOTIFY_URL = "https://project--0d4ca1e2-ec48-4d2b-8543-5744fc5f0f2c.lovable.app/api/public/payments";
+const NOTIFY_URL =
+  "https://project--0d4ca1e2-ec48-4d2b-8543-5744fc5f0f2c.lovable.app/api/public/payments";
 const RECEIVER = "35023613";
 
 function Upgrade() {
-  if (isNativeApp()) return <NativeUpgrade />;
+  if (isNativeApp()) {
+    if (nativePlatform() === "android") return <AndroidUpgrade />;
+    return <IosComingSoon />;
+  }
   return <WebUpgrade />;
 }
 
@@ -43,9 +48,16 @@ function WebUpgrade() {
       <div className="glass-card rounded-2xl p-8 text-center max-w-md">
         <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-primary" />
         <h1 className="text-xl font-semibold">Redirecting to PayFast…</h1>
-        <p className="text-sm text-muted-foreground mt-2">Setting up your R99/mo Premium subscription.</p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Setting up your R99/mo Premium subscription.
+        </p>
 
-        <form ref={formRef} action="https://payment.payfast.io/eng/process" method="post" className="hidden">
+        <form
+          ref={formRef}
+          action="https://payment.payfast.io/eng/process"
+          method="post"
+          className="hidden"
+        >
           <input type="hidden" name="cmd" value="_paynow" />
           <input type="hidden" name="receiver" value={RECEIVER} />
           <input type="hidden" name="notify_url" value={NOTIFY_URL} />
@@ -64,21 +76,35 @@ function WebUpgrade() {
   );
 }
 
-function NativeUpgrade() {
-  const { user } = useAuth();
+function IosComingSoon() {
+  return (
+    <div className="min-h-[60vh] grid place-items-center px-4">
+      <div className="glass-card rounded-2xl p-8 text-center max-w-md">
+        <Sparkles className="h-6 w-6 mx-auto mb-3 text-primary" />
+        <h1 className="text-xl font-semibold">Coming soon on iOS</h1>
+        <p className="text-sm text-muted-foreground mt-2">
+          In-app subscriptions on iOS are not enabled yet. Please use the web
+          version to upgrade for now.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AndroidUpgrade() {
   const [loading, setLoading] = useState(true);
-  const [packages, setPackages] = useState<any[]>([]);
+  const [products, setProducts] = useState<PlayProduct[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
-  const [rawOffering, setRawOffering] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        await configureIAP(user?.id ?? null);
-        const offering = await loadOfferings();
-        setPackages(offering?.availablePackages ?? []);
-        setRawOffering(offering);
+        await initBilling();
+        // Give the store a tick to load products.
+        await new Promise((r) => setTimeout(r, 1500));
+        const offerings = await getOfferings();
+        setProducts(offerings);
       } catch (e) {
         console.error(e);
         toast.error("Could not load subscription options");
@@ -86,23 +112,15 @@ function NativeUpgrade() {
         setLoading(false);
       }
     })();
-  }, [user?.id]);
+  }, []);
 
-  const buy = async (pkg: any) => {
-    setBusy(pkg.identifier);
+  const buy = async (productId: string) => {
+    setBusy(productId);
     try {
-      const ok = await purchasePackage(pkg);
-      if (ok) {
-        toast.success("Premium unlocked!");
-        setTimeout(() => window.location.assign("/dashboard"), 800);
-      } else {
-        toast.error("Purchase did not complete");
-      }
+      await purchase(productId);
+      toast.success("Purchase started — follow the Google prompt");
     } catch (e: any) {
-      if (
-        e?.code !== "PURCHASE_CANCELLED" &&
-        !String(e?.message).toLowerCase().includes("cancel")
-      ) {
+      if (!String(e?.message).toLowerCase().includes("cancel")) {
         toast.error(e?.message || "Purchase failed");
       }
     } finally {
@@ -110,16 +128,11 @@ function NativeUpgrade() {
     }
   };
 
-  const restore = async () => {
+  const onRestore = async () => {
     setBusy("restore");
     try {
-      const ok = await restorePurchases();
-      if (ok) {
-        toast.success("Purchases restored");
-        setTimeout(() => window.location.assign("/dashboard"), 800);
-      } else {
-        toast("No active subscription found");
-      }
+      await restore();
+      toast.success("Restore requested");
     } catch (e: any) {
       toast.error(e?.message || "Restore failed");
     } finally {
@@ -127,7 +140,7 @@ function NativeUpgrade() {
     }
   };
 
-  const status = getIAPConfigStatus();
+  const status = getBillingStatus();
 
   return (
     <div className="min-h-[80vh] px-4 py-8 max-w-md mx-auto">
@@ -145,59 +158,52 @@ function NativeUpgrade() {
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
-      ) : packages.length === 0 ? (
+      ) : products.length === 0 ? (
         <div className="glass-card rounded-2xl p-6 text-sm space-y-4">
           <p className="font-semibold text-foreground">
             Google Play subscriptions are not set up yet.
           </p>
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+            <li>Create your app in Google Play Console and complete your Payments profile.</li>
             <li>
-              Create your subscription products in{" "}
-              <strong className="text-foreground">Google Play Console</strong>{" "}
-              (e.g. monthly Premium).
+              Under <strong className="text-foreground">Monetisation → Products</strong>,
+              create products with these exact IDs:
+              <ul className="mt-1 ml-4 list-disc space-y-1">
+                <li><code>{PRODUCT_IDS.monthly}</code></li>
+                <li><code>{PRODUCT_IDS.yearly}</code></li>
+                <li><code>{PRODUCT_IDS.lifetime}</code></li>
+              </ul>
             </li>
             <li>
-              In{" "}
-              <strong className="text-foreground">RevenueCat</strong>, connect your
-              Google Play app using a service-account JSON key.
+              Create a Google Cloud service account, grant it access in Play
+              Console → Users and permissions (View financial data + Manage
+              orders).
             </li>
             <li>
-              Make sure your RevenueCat offering contains at least one package
-              linked to a Google Play product.
-            </li>
-            <li>
-              Copy your RevenueCat{" "}
-              <strong className="text-foreground">public SDK key</strong>{" "}
-              (starts with <code>goog_</code>) and add it to this project as{" "}
-              <code>VITE_REVENUECAT_ANDROID_KEY</code>.
+              Paste the service-account JSON, your package name, and the RTDN
+              token into project secrets when prompted.
             </li>
           </ol>
-          <p className="text-xs text-muted-foreground pt-2">
-            Once configured, reopen this screen and the subscription options will
-            appear automatically.
-          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {packages.map((pkg) => (
+          {products.map((p) => (
             <button
-              key={pkg.identifier}
-              onClick={() => buy(pkg)}
+              key={p.id}
+              onClick={() => buy(p.id)}
               disabled={busy !== null}
               className="w-full glass-card rounded-2xl p-5 text-left hover:border-primary/60 transition-colors disabled:opacity-60"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold">
-                    {pkg.product.title || pkg.identifier}
-                  </div>
+                  <div className="font-semibold">{p.title}</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {pkg.product.description || "NextCareer Premium"}
+                    {p.description || "NextCareer Premium"}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold">{pkg.product.priceString}</div>
-                  {busy === pkg.identifier && (
+                  <div className="font-bold">{p.priceString}</div>
+                  {busy === p.id && (
                     <Loader2 className="h-4 w-4 animate-spin mt-1 ml-auto text-primary" />
                   )}
                 </div>
@@ -208,7 +214,7 @@ function NativeUpgrade() {
       )}
 
       <button
-        onClick={restore}
+        onClick={onRestore}
         disabled={busy !== null}
         className="mt-6 w-full inline-flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-60"
       >
@@ -235,31 +241,23 @@ function NativeUpgrade() {
             <div className="mt-3 glass-card rounded-xl p-4 text-xs space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Platform</span>
-                <span className="font-mono">{nativePlatform()}</span>
+                <span className="font-mono">{status.platform}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">RevenueCat configured</span>
-                <span className="font-mono">
-                  {status.configured ? "Yes" : "No"}
-                </span>
+                <span className="text-muted-foreground">Billing initialized</span>
+                <span className="font-mono">{status.initialized ? "Yes" : "No"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">API key present</span>
-                <span className="font-mono">
-                  {status.hasKey ? "Yes" : "No"}
-                </span>
+                <span className="text-muted-foreground">Products loaded</span>
+                <span className="font-mono">{status.productCount}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Packages loaded</span>
-                <span className="font-mono">{packages.length}</span>
-              </div>
-              {rawOffering && (
+              {status.lastVerify && (
                 <details className="pt-2">
                   <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                    Raw offering JSON
+                    Last verify response
                   </summary>
                   <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/30 p-2 text-[10px]">
-                    {JSON.stringify(rawOffering, null, 2)}
+                    {JSON.stringify(status.lastVerify, null, 2)}
                   </pre>
                 </details>
               )}
@@ -269,8 +267,8 @@ function NativeUpgrade() {
       )}
 
       <p className="mt-6 text-xs text-muted-foreground text-center leading-relaxed">
-        Subscription auto-renews unless cancelled at least 24h before period
-        ends. Manage in your device's subscription settings.
+        Subscriptions auto-renew unless cancelled at least 24h before the period
+        ends. Manage in your Google Play account.
       </p>
     </div>
   );
