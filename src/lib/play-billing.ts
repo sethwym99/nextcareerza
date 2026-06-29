@@ -28,8 +28,8 @@ let storeRef: any = null;
 let lastVerify: any = null;
 
 async function getStore() {
-  // Loaded dynamically; the module references cordova globals that don't exist on web.
-  const mod: any = await import("cordova-plugin-purchase");
+  // The package's d.ts isn't a real module; cast to any.
+  const mod: any = await import("cordova-plugin-purchase" as any);
   const CdvPurchase = mod.CdvPurchase ?? (mod.default && mod.default.CdvPurchase) ?? mod;
   return CdvPurchase;
 }
