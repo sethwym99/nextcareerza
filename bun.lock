@@ -47,7 +47,6 @@
         "@radix-ui/react-toggle": "^1.1.10",
         "@radix-ui/react-toggle-group": "^1.1.11",
         "@radix-ui/react-tooltip": "^1.2.8",
-        "@revenuecat/purchases-capacitor": "^13.2.0",
         "@supabase/supabase-js": "^2.108.2",
         "@tailwindcss/vite": "^4.2.1",
         "@tanstack/react-query": "^5.83.0",
@@ -58,6 +57,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
+        "cordova-plugin-purchase": "^13.17.2",
         "date-fns": "^4.1.0",
         "embla-carousel-react": "^8.6.0",
         "eventsource-parser": "^3.1.0",
@@ -443,10 +443,6 @@
 
     "@radix-ui/rect": ["@radix-ui/rect@1.1.1", "", {}, "sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw=="],
 
-    "@revenuecat/purchases-capacitor": ["@revenuecat/purchases-capacitor@13.2.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@revenuecat/purchases-capacitor/-/purchases-capacitor-13.2.0.tgz", { "dependencies": { "@revenuecat/purchases-typescript-internal-esm": "18.15.1" }, "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-vRIEMkL3oqfdRWDU6FusGHV+iYyVPLMC7nVPyISw1iWmaa1gaETnLJumzmeQIrODTF2dYD20JFmWf1/hpNBUmQ=="],
-
-    "@revenuecat/purchases-typescript-internal-esm": ["@revenuecat/purchases-typescript-internal-esm@18.15.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@revenuecat/purchases-typescript-internal-esm/-/purchases-typescript-internal-esm-18.15.1.tgz", {}, "sha512-hIjrJ5B1nJQWEdn3B7SBvY9iwVrjS+AwJOO2BpWvN+hlb9ovUfqpnLtSDpSRQNGSroTa2VtesKjjDdsfeyXo5A=="],
-
     "@rolldown/binding-android-arm64": ["@rolldown/binding-android-arm64@1.1.0", "", { "os": "android", "cpu": "arm64" }, "sha512-gCYzGOSkYY6Z034suzd20euvds7lPzMEEla62DJGE/ZAlR4OMBnNbvnBSsIGUCAr52gaWMsloGxP4tVGtN5aCA=="],
 
     "@rolldown/binding-darwin-arm64": ["@rolldown/binding-darwin-arm64@1.1.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-JQBD77MNgu+4Z6RAyg69acugdrhhVoWesr3l47zohYZ2YV2fwkWMArkN/2p4l6Ei+Sno7W5q+UsKdVWq5Ens0w=="],
@@ -774,6 +770,8 @@
     "convert-source-map": ["convert-source-map@2.0.0", "", {}, "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg=="],
 
     "cookie-es": ["cookie-es@3.1.1", "", {}, "sha512-UaXxwISYJPTr9hwQxMFYZ7kNhSXboMXP+Z3TRX6f1/NyaGPfuNUZOWP1pUEb75B2HjfklIYLVRfWiFZJyC6Npg=="],
+
+    "cordova-plugin-purchase": ["cordova-plugin-purchase@13.17.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cordova-plugin-purchase/-/cordova-plugin-purchase-13.17.2.tgz", {}, "sha512-5PWpF5CGnqdYjH4x2ULVj5fUA304Ftl/UF1wEc4+HOJmAtJeIVb9/UlnckVhAyhQDT7MIk6+YNGSctJeqZGsFQ=="],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 
