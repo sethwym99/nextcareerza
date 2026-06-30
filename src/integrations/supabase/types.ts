@@ -220,6 +220,51 @@ export type Database = {
         }
         Relationships: []
       }
+      interview_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          improvements: Json
+          look_away_count: number
+          question_count: number
+          red_flags: Json
+          role: string
+          score: number
+          strengths: Json
+          summary: string | null
+          user_id: string
+          verdict: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          improvements?: Json
+          look_away_count?: number
+          question_count?: number
+          red_flags?: Json
+          role: string
+          score?: number
+          strengths?: Json
+          summary?: string | null
+          user_id: string
+          verdict?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          improvements?: Json
+          look_away_count?: number
+          question_count?: number
+          red_flags?: Json
+          role?: string
+          score?: number
+          strengths?: Json
+          summary?: string | null
+          user_id?: string
+          verdict?: string | null
+        }
+        Relationships: []
+      }
       payment_events: {
         Row: {
           amount_gross: number | null
@@ -308,6 +353,7 @@ export type Database = {
           id: string
           links: string | null
           location_text: string | null
+          onboarding_completed_at: string | null
           plan: string
           premium_expires_at: string | null
           target_role: string | null
@@ -322,6 +368,7 @@ export type Database = {
           id: string
           links?: string | null
           location_text?: string | null
+          onboarding_completed_at?: string | null
           plan?: string
           premium_expires_at?: string | null
           target_role?: string | null
@@ -336,6 +383,7 @@ export type Database = {
           id?: string
           links?: string | null
           location_text?: string | null
+          onboarding_completed_at?: string | null
           plan?: string
           premium_expires_at?: string | null
           target_role?: string | null
