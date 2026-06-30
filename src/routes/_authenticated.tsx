@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon, ChevronRight, ChevronLeft,
+  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon,
 } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthedLayout,
@@ -86,20 +87,20 @@ function AuthedLayout() {
     <div className="min-h-screen flex">
       {/* Sidebar — desktop + mobile drawer */}
       <aside
-        className={`fixed md:sticky top-0 z-50 h-screen w-64 shrink-0 border-r border-border bg-sidebar/95 backdrop-blur-xl md:translate-x-0 transition-transform ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed md:sticky top-0 z-50 h-screen w-72 md:w-64 shrink-0 border-r border-border bg-sidebar/95 backdrop-blur-xl md:translate-x-0 transition-transform flex flex-col ${open ? "translate-x-0" : "-translate-x-full"}`}
         style={{
           paddingTop: "env(safe-area-inset-top)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        <div className="h-16 px-5 flex items-center justify-between border-b border-border">
+        <div className="h-16 px-5 flex items-center justify-between border-b border-border shrink-0">
           <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold">
             <img src="/logo.png" alt="NextCareer" className="h-8 w-8 rounded-lg" />
             NextCareer
           </Link>
           <button onClick={() => setOpen(false)} className="md:hidden p-1" aria-label="Close menu"><X className="h-5 w-5" /></button>
         </div>
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 space-y-1 flex-1 overflow-y-auto">
           {nav.map((n) => {
             const Icon = n.icon;
             const active = location.pathname === n.to;
@@ -107,41 +108,29 @@ function AuthedLayout() {
               <Link
                 key={n.to}
                 to={n.to}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition min-h-11 ${active ? "bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[0_0_20px_-4px_oklch(0.62_0.22_277/0.6)]" : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"}`}
+                className={`flex items-center gap-3 px-3 py-3 md:py-2 rounded-lg text-sm transition min-h-11 ${active ? "bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[0_0_20px_-4px_oklch(0.62_0.22_277/0.6)]" : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"}`}
               >
-                <Icon className="h-4 w-4" /> {n.label}
+                <Icon className="h-4 w-4 shrink-0" /> {n.label}
               </Link>
             );
           })}
         </nav>
-        <div className="absolute bottom-0 inset-x-0 p-3 border-t border-border space-y-1">
+        <div className="shrink-0 p-3 border-t border-border space-y-1">
           <div className="px-3 py-2 text-xs text-muted-foreground truncate">{user?.email}</div>
-          <Link to="/billing" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground">Billing</Link>
-          <Link to="/privacy" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground">Privacy</Link>
-          <Link to="/terms" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground">Terms</Link>
-          <Link to="/support" className="block px-3 py-2 text-xs text-muted-foreground hover:text-foreground">Support</Link>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 text-xs text-muted-foreground">
+            <Link to="/billing" className="hover:text-foreground">Billing</Link>
+            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms</Link>
+            <Link to="/support" className="hover:text-foreground">Support</Link>
+          </div>
           <Button variant="ghost" className="w-full justify-start min-h-11" onClick={() => signOut().then(() => navigate({ to: "/" }))}>
             <LogOut className="h-4 w-4" /> Sign out
           </Button>
         </div>
       </aside>
 
-      {open && <div className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
 
-      {/* Floating sidebar toggle arrow (mobile) */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Hide menu" : "Show menu"}
-        data-sidebar-toggle
-        className="md:hidden fixed z-[70] h-12 w-12 grid place-items-center rounded-full border border-border bg-primary text-primary-foreground shadow-xl transition-[left,transform] duration-300 active:scale-95"
-        style={{
-          top: "max(5rem, calc(env(safe-area-inset-top) + 4.25rem))",
-          left: open ? "calc(16rem + 0.75rem)" : "0.75rem",
-        }}
-      >
-        {open ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-      </button>
+      {open && <div className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
 
       {/* Main */}
       <div className="flex-1 min-w-0">
@@ -149,13 +138,14 @@ function AuthedLayout() {
           className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-between bg-background/80 backdrop-blur-xl border-b border-border"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
-          <button onClick={() => setOpen((v) => !v)} className="p-2 min-h-11 min-w-11" aria-label={open ? "Hide menu" : "Show menu"}>{open ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}</button>
+          <button onClick={() => setOpen((v) => !v)} className="p-2 min-h-11 min-w-11" aria-label={open ? "Hide menu" : "Show menu"}><Menu className="h-5 w-5" /></button>
           <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold">
             <img src="/logo.png" alt="NextCareer" className="h-7 w-7 rounded-lg" />
             NextCareer
           </Link>
           <div className="w-11" />
         </header>
+
         <main
           className="p-5 md:p-8 max-w-6xl mx-auto pb-28 md:pb-8"
           style={{ paddingBottom: "max(7rem, calc(env(safe-area-inset-bottom) + 6rem))" }}
