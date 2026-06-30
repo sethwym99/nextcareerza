@@ -22,7 +22,7 @@ workflows:
           npx cap sync android
       - name: Bump versionCode
         script: |
-          sed -i.bak "s/versionCode 1/versionCode $CM_BUILD_ID/g" android/app/build.gradle
+          sed -i.bak "s/versionCode 1/versionCode $BUILD_NUMBER/g" android/app/build.gradle
       - name: Build unsigned AAB
         script: |
           cd android
