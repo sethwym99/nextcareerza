@@ -5,6 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       node: 22
+      java: 21
     scripts:
       - name: Install bun
         script: |

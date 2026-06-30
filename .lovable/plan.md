@@ -1,27 +1,19 @@
-## Fix Codemagic build (Sync Capacitor Android failure)
+## Fix "Build unsigned AAB" failure on Codemagic
 
-**Root cause:** Capacitor's `webDir` is `dist`, but Vite/TanStack Start writes the client bundle to `dist/client/` and the server bundle to `dist/server/`. Capacitor sync aborts with "Could not find the web assets directory: ./dist".
-
-**Bigger issue:** NextCareer is an SSR app — server functions (`*.functions.ts`), the AI gateway, transcription, billing webhooks, email queue, etc. only exist on the Lovable Cloud server. A pure static `dist/client/` bundle inside an APK would render the shell but every server call would fail.
-
-### Recommended approach: thin native shell
-
-Point the Android app at your published Lovable URL. The APK becomes a native wrapper (with Google Play Billing wired natively through `cordova-plugin-purchase`) while all SSR/server-function logic keeps running on Lovable Cloud where it already works.
+**Likely root cause:** The Android project is set to compile with **Java 21** (`android/app/capacitor.build.gradle` → `VERSION_21`), but the Codemagic `mac_mini_m1` instance defaults to an older JDK (usually 17). Gradle's `bundleRelease` then crashes with an "Unsupported class file major version" / "invalid source release: 21" error, which matches a 43-second failure at the Gradle step.
 
 ### Changes
 
-1. **`capacitor.config.ts`**
-   - Set `webDir: "dist/client"` so `cap sync` finds the static fallback.
-   - Add `server: { url: "https://nextcareer.one", cleartext: false }` so the WebView loads the live site (server functions, auth callbacks, payments, AI all work).
+**`codemagic.yaml`** — pin JDK 21 before the Gradle step:
 
-2. **`codemagic.yaml`** — no change needed; the existing `bun run build` → `npx cap sync android` → `gradlew bundleRelease` sequence will work once `webDir` is correct.
+```yaml
+environment:
+  node: 22
+  java: 21
+```
 
-### Why not bundle everything locally
+That's the only edit. Re-run the build after.
 
-- Server functions are compiled into `dist/server/_worker.js` (Cloudflare Worker) — they cannot run inside an Android WebView.
-- Rewriting every server function as a client-side call would re-expose service-role keys and break auth.
-- The thin-shell approach is what RevenueCat/Capacitor billing docs recommend for SSR apps and is the only path that keeps Google Play Billing native while preserving the working backend.
+### If it still fails
 
-### After this lands
-
-Re-run the Codemagic build. The `.aab` will install, open the live NextCareer site inside the native shell, and `cordova-plugin-purchase` will hand off to Google Play for subscriptions exactly as wired in `src/lib/play-billing.ts`.
+The next most likely cause is Gradle refusing to produce a release bundle without a signing config. Fix would be to add a debug-signed release variant in `android/app/build.gradle` so Codemagic can produce an installable `.aab` for internal testing. I'll only apply this if the Java 21 fix isn't enough — please paste the last ~30 lines of the failed step's log if the rebuild fails so I can confirm.
