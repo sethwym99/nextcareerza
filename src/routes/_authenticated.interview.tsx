@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
 import { InterviewerAvatar } from "@/components/interview/InterviewerAvatar";
+import { InterviewTabs } from "@/components/interview/InterviewTabs";
 
 const VOICES = [
   { id: "alloy", label: "Alex — neutral pro" },
