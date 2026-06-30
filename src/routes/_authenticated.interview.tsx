@@ -107,6 +107,7 @@ function focusLabel(status: FocusStatus) {
 function Page() {
   const startFn = useServerFn(startInterviewSession);
   const turnFn = useServerFn(interviewTurn);
+  const saveFn = useServerFn(saveInterviewSession);
 
   const [role, setRole] = useState("");
   const [phase, setPhase] = useState<Phase>("setup");
