@@ -99,7 +99,7 @@ function Billing() {
 
       {/* Recent events */}
       <section className="glass-card rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-3">Recent webhook events</h2>
+        <h2 className="text-lg font-semibold mb-3">Recent billing activity</h2>
         {recent.length === 0 ? (
           <div className="text-sm text-muted-foreground">No webhook events yet.</div>
         ) : (
