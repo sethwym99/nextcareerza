@@ -28,7 +28,7 @@ bunx cap sync android
 
 > The `android/` folder is checked into the repo. The Play Billing permission
 > (`com.android.vending.BILLING`) is already in `AndroidManifest.xml`, and
-> `applicationId` is `one.nextcareer.app`. Don't change the appId after the
+> `applicationId` is `com.smforge.nextcareer`. Don't change the appId after the
 > first Play upload — it's permanent.
 
 ---
