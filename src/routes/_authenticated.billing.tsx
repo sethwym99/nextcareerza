@@ -87,7 +87,7 @@ function Billing() {
             <Row label="Status" value={<span className="text-success font-medium">COMPLETE</span>} />
             <Row label="Amount" value={fmtAmount(last.amount_gross, last.currency)} />
             <Row label="Item" value={last.item_name || "—"} />
-            <Row label="PayFast ID" value={<span className="font-mono text-xs">{last.pf_payment_id || "—"}</span>} />
+            <Row label="Reference" value={<span className="font-mono text-xs">{last.pf_payment_id || "—"}</span>} />
             <Row label="Received" value={fmtDate(last.created_at)} />
           </dl>
         ) : (
