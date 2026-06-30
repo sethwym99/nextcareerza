@@ -1,10 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { analyzeCv } from "@/lib/ai.functions";
-import { FileText, Sparkles, Copy } from "lucide-react";
+import { getProfile, saveProfile } from "@/lib/profile.functions";
+import { FileText, Sparkles, Copy, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cv-builder")({
@@ -14,9 +16,26 @@ export const Route = createFileRoute("/_authenticated/cv-builder")({
 
 function Page() {
   const fn = useServerFn(analyzeCv);
+  const getFn = useServerFn(getProfile);
+  const saveFn = useServerFn(saveProfile);
   const [cv, setCv] = useState("");
+  const [hydrated, setHydrated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<any>(null);
+
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: () => getFn() });
+  useEffect(() => {
+    if (profile && !hydrated) {
+      if (profile.baseCv) setCv(profile.baseCv);
+      setHydrated(true);
+    }
+  }, [profile, hydrated]);
+
+  const saveMut = useMutation({
+    mutationFn: () => saveFn({ data: { baseCv: cv } }),
+    onSuccess: () => toast.success("Saved to your profile"),
+    onError: (e: any) => toast.error(e?.message || "Failed to save"),
+  });
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -31,10 +50,13 @@ function Page() {
     try {
       const r = await fn({ data: { cvText: cv } });
       setResult(r);
+      // auto-save the base CV when it changes
+      if (cv !== (profile?.baseCv ?? "")) saveMut.mutate();
     } catch (e: any) {
       toast.error(e.message || "Failed");
     } finally { setBusy(false); }
   }
+
 
   return (
     <div className="space-y-6">
