@@ -155,6 +155,24 @@ function Page() {
         </p>
       </header>
 
+      {!isPremium && (
+        <Link
+          to="/upgrade"
+          className="block glass-card rounded-2xl p-4 md:p-5 bg-[image:var(--gradient-primary)] text-primary-foreground active:scale-[0.99] transition"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-white/15 grid place-items-center shrink-0">
+              <Crown className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold">Roadmap is a Premium feature</div>
+              <div className="text-xs opacity-90">Upgrade to generate your personalized career plan.</div>
+            </div>
+            <span className="text-xs font-semibold underline shrink-0">Upgrade</span>
+          </div>
+        </Link>
+      )}
+
       <div className="glass-card rounded-2xl p-4 md:p-6 grid md:grid-cols-[1fr_180px_120px_auto] gap-3 items-end">
         <div className="space-y-2">
           <label className="text-sm font-medium">Your goal</label>
@@ -162,11 +180,12 @@ function Page() {
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
             placeholder="e.g. Become a Data Analyst"
+            disabled={!isPremium}
           />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">Current level</label>
-          <Select value={level} onValueChange={setLevel}>
+          <Select value={level} onValueChange={setLevel} disabled={!isPremium}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -185,9 +204,10 @@ function Page() {
             max={36}
             value={months}
             onChange={(e) => setMonths(parseInt(e.target.value) || 6)}
+            disabled={!isPremium}
           />
         </div>
-        <Button variant="hero" onClick={run} disabled={busy}>
+        <Button variant="hero" onClick={run} disabled={busy || !isPremium}>
           <Sparkles className="h-4 w-4" /> {busy ? "Planning…" : r ? "Regenerate" : "Build roadmap"}
         </Button>
       </div>
