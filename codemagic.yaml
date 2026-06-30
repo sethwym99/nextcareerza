@@ -23,7 +23,16 @@ workflows:
       - name: Bump versionCode
         script: |
           sed -i.bak "s/versionCode 1/versionCode $BUILD_NUMBER/g" android/app/build.gradle
-      - name: Build unsigned AAB
+      - name: Set up signing
+        script: |
+          KEYSTORE="${CM_KEYSTORE_PATH:-$KEYSTORE_PATH}"
+          if [ -n "$KEYSTORE" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "storeFile=$KEYSTORE" > android/key.properties
+            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+          fi
+      - name: Build release AAB
         script: |
           cd android
           ./gradlew bundleRelease
