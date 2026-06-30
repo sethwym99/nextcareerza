@@ -86,11 +86,10 @@ function AuthedLayout() {
     <div className="min-h-screen flex">
       {/* Sidebar — desktop + mobile drawer */}
       <aside
-        className={`fixed md:sticky top-0 z-50 h-screen w-64 shrink-0 border-r border-border bg-sidebar/95 backdrop-blur-xl md:translate-x-0 ${dragX === null ? "transition-transform" : ""} ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed md:sticky top-0 z-50 h-screen w-64 shrink-0 border-r border-border bg-sidebar/95 backdrop-blur-xl md:translate-x-0 transition-transform ${open ? "translate-x-0" : "-translate-x-full"}`}
         style={{
           paddingTop: "env(safe-area-inset-top)",
           paddingBottom: "env(safe-area-inset-bottom)",
-          transform: dragX !== null ? `translateX(${dragX}px)` : undefined,
         }}
       >
         <div className="h-16 px-5 flex items-center justify-between border-b border-border">
