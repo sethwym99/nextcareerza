@@ -78,8 +78,13 @@ function Dashboard() {
                 to={a.to}
                 className="group flex flex-col items-center gap-1.5 active:scale-95 transition"
               >
-                <div className={`h-16 w-16 rounded-[1.4rem] bg-gradient-to-br ${a.color} grid place-items-center shadow-lg shadow-black/20`}>
+                <div className={`relative h-16 w-16 rounded-[1.4rem] bg-gradient-to-br ${a.color} grid place-items-center shadow-lg shadow-black/20`}>
                   <Icon className="h-7 w-7 text-white drop-shadow" />
+                  {(a as any).premium && !isPremium && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-400 grid place-items-center shadow ring-2 ring-background">
+                      <Crown className="h-3 w-3 text-yellow-900" />
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-center font-medium leading-tight max-w-[4.5rem]">{a.label}</div>
               </Link>
