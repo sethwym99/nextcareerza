@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon, History,
+  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
