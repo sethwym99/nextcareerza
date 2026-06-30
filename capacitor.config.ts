@@ -3,7 +3,11 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "com.smforge.nextcareer",
   appName: "NextCareer Jobs",
-  webDir: "dist",
+  webDir: "dist/client",
+  server: {
+    url: "https://nextcareer.one",
+    cleartext: false,
+  },
   ios: {
     contentInset: "always",
   },
