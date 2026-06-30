@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const apps = [
-  { to: "/smart-apply" as const, label: "Smart Apply", icon: Wand2, color: "from-fuchsia-500 to-purple-600" },
+  { to: "/smart-apply" as const, label: "Smart Apply", icon: Wand2, color: "from-fuchsia-500 to-purple-600", premium: true },
   { to: "/cv-builder" as const, label: "CV Builder", icon: FileText, color: "from-sky-500 to-indigo-600" },
-  { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare, color: "from-emerald-500 to-teal-600" },
+  { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare, color: "from-emerald-500 to-teal-600", premium: true },
   { to: "/job-match" as const, label: "Job Match", icon: Target, color: "from-amber-500 to-orange-600" },
   { to: "/interview" as const, label: "Interview", icon: Mic, color: "from-rose-500 to-pink-600" },
-  { to: "/roadmap" as const, label: "Roadmap", icon: MapIcon, color: "from-violet-500 to-fuchsia-600" },
+  { to: "/roadmap" as const, label: "Roadmap", icon: MapIcon, color: "from-violet-500 to-fuchsia-600", premium: true },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks, color: "from-cyan-500 to-blue-600" },
   { to: "/upgrade" as const, label: "Upgrade", icon: Crown, color: "from-yellow-400 to-amber-600" },
 ];
@@ -78,8 +78,13 @@ function Dashboard() {
                 to={a.to}
                 className="group flex flex-col items-center gap-1.5 active:scale-95 transition"
               >
-                <div className={`h-16 w-16 rounded-[1.4rem] bg-gradient-to-br ${a.color} grid place-items-center shadow-lg shadow-black/20`}>
+                <div className={`relative h-16 w-16 rounded-[1.4rem] bg-gradient-to-br ${a.color} grid place-items-center shadow-lg shadow-black/20`}>
                   <Icon className="h-7 w-7 text-white drop-shadow" />
+                  {(a as any).premium && !isPremium && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-yellow-400 grid place-items-center shadow ring-2 ring-background">
+                      <Crown className="h-3 w-3 text-yellow-900" />
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-center font-medium leading-tight max-w-[4.5rem]">{a.label}</div>
               </Link>
