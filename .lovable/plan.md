@@ -1,83 +1,58 @@
+
 ## Goal
 
-Remove RevenueCat entirely and wire native Android subscriptions through the `cordova-plugin-purchase` Capacitor wrapper, with backend verification + Real-Time Developer Notifications (RTDN) handled on Lovable Cloud. Web billing (PayFast) is unchanged.
+Replace the current paste-a-URL Smart Apply flow with a **Job Search + Auto-Tailor** experience. The user types a role + location, sees real live jobs, clicks one, and gets a tailored CV + cover letter + match score generated against their saved profile CV.
 
-## 1. Rip out RevenueCat
+## User flow
 
-- Uninstall `@revenuecat/purchases-capacitor`.
-- Delete:
-  - `src/lib/iap.ts` (RevenueCat init + helpers)
-  - `src/routes/api/public/revenuecat.ts` (webhook)
-  - RevenueCat init call in `src/lib/native-shell.ts`
-- Strip RevenueCat references from `src/routes/_authenticated.upgrade.tsx` (debug panel, package mapping, setup instructions).
-- Delete secrets: `REVENUECAT_WEBHOOK_AUTH`, `VITE_REVENUECAT_ANDROID_KEY` (if present).
+1. User opens `/smart-apply`.
+2. Inputs: role (e.g. "Frontend Developer"), optional location (e.g. "Cape Town" or "Remote"), optional seniority.
+3. Hit Search → grid of 10–20 live job cards (title, company, location, snippet, posted date, link to original).
+4. Click a card → side panel opens, runs the tailor step using their saved base CV:
+   - Match score
+   - Matched / missing skills
+   - Tailored CV
+   - Cover letter
+   - Salary estimate
+5. "Save pack" pushes it into the existing tracker + `application_packs` table (already wired).
+6. Premium gate stays — free users see an upgrade card instead of the search.
 
-## 2. Install Play Billing plugin
+## How job search works (technical)
 
-- `bun add cordova-plugin-purchase` (works through Capacitor; ships TypeScript types as `CdvPurchase`).
-- Add it to `capacitor.config.ts` cordova plugin list if needed.
+- Use **Firecrawl** via the existing standard connector for the search step (`firecrawl.search` with the role+location query, time-filtered to last month, limit 20). Firecrawl returns title/url/description from major job boards without us scraping per-site.
+- No URL fetching needed for the tailor step anymore — we pass the search result's title + company + description snippet directly to the model. This kills the "site blocks scraping" failure mode that broke the old flow.
+- If Firecrawl isn't connected yet, prompt the user once to connect it (managed connection, no key needed from them).
 
-## 3. New client wrapper: `src/lib/play-billing.ts`
+## Backend changes (`src/lib/smart-apply.functions.ts`)
 
-- `initBilling()` — register the three product IDs (`nextcareer_premium_monthly`, `nextcareer_premium_yearly`, `nextcareer_premium_lifetime`), set validator to call our backend, call `store.initialize([Platform.GOOGLE_PLAY])`.
-- `getOfferings()` — return loaded products with localized price strings for the upgrade page.
-- `purchase(productId)` — call `product.getOffer().order()`.
-- `restore()` — `store.restorePurchases()`.
-- Approved → backend verify → finish handler. Verified events update local profile cache.
-- Init is called from `src/lib/native-shell.ts` on Android only.
+- Keep: `getBaseCv`, `saveBaseCv`, `saveApplicationPack`, `getApplicationPack`, premium enforcement.
+- Remove: `smartApply` (URL-fetch + monolithic generate), `fetchJobPage`, `htmlToText`.
+- Add:
+  - `searchJobs({ role, location?, seniority? })` — calls Firecrawl gateway, returns normalized `{id, title, company, location, url, snippet, postedAt}[]`. Premium-gated.
+  - `tailorForJob({ jobTitle, company, location, jobSnippet, cvText })` — runs the existing two-step structured generation (job info extract → tailored pack). Premium-gated. Returns the same shape the UI already renders.
 
-## 4. Backend verification (Lovable Cloud)
+## Frontend changes (`src/routes/_authenticated.smart-apply.tsx`)
 
-### Secrets to add (via `add_secret`, requested from user)
-- `GOOGLE_PLAY_PACKAGE_NAME` — e.g. `one.nextcareer.app`
-- `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` — full JSON for a GCP service account with Android Publisher access
-- `GOOGLE_PLAY_RTDN_TOKEN` — random shared secret we generate and add to the Pub/Sub push URL as `?token=...`
+- Rewrite around two panes:
+  - **Left**: search form + results list (cards).
+  - **Right**: selected job's tailor result (re-uses the existing `ResultPanel`).
+- Loading states per pane, empty state ("Search to see live jobs"), error state for Firecrawl quota/connection.
+- Keep the "Save pack" → tracker integration unchanged.
+- Keep the CV editor, but move it into a collapsible "Your CV" drawer at the top so it doesn't dominate the layout (it auto-loads from profile like today).
 
-### New server function: `src/lib/play-billing.functions.ts`
-- `verifyPlayPurchase({ productId, purchaseToken })` — protected by `requireSupabaseAuth`.
-  - Mints a Google OAuth2 access token from the service account JSON (JWT → token endpoint, no SDK; works in Workers).
-  - Calls `androidpublisher.purchases.subscriptionsv2.get` (or `products.get` for lifetime) with `packageName` + `purchaseToken`.
-  - On valid + active: upsert into new `play_purchases` table (purchase_token PK, user_id, product_id, expiry, state, raw JSON), set `profiles.plan = 'premium'`, set `premium_expires_at`.
-  - Returns `{ ok: true, expiresAt }` so the client can finish the transaction.
+## Premium gate
 
-### New public route: `src/routes/api/public/play-rtdn.ts`
-- Validates `?token=` against `GOOGLE_PLAY_RTDN_TOKEN`.
-- Decodes Pub/Sub envelope (`message.data` base64 → JSON `DeveloperNotification`).
-- Re-fetches the subscription state from Google and updates `play_purchases` + `profiles.plan` accordingly (renewals, cancellations, expirations, refunds, grace period, holds).
-- Returns 204.
+Unchanged behaviour — both `searchJobs` and `tailorForJob` check `profiles.plan === 'premium'` server-side and throw with the existing "Upgrade to unlock" message. UI shows the upgrade card for non-premium users instead of the search box.
 
-### New migration
-- `play_purchases` table + RLS (user can SELECT own rows; only service role writes).
-- GRANTs per project conventions.
-- Add `premium_expires_at timestamptz` to `profiles` if not present.
-- Update existing `prevent_plan_self_update` trigger to still allow service-role writes (already the case).
+## Out of scope
 
-## 5. Upgrade page rework (`src/routes/_authenticated.upgrade.tsx`)
+- No per-job auto-apply / form submission.
+- No saving search history.
+- No new tables — `application_packs` already handles saved packs.
+- Old `usage_events` row is kept (logged on each `tailorForJob` call).
 
-- Native Android: list products from `play-billing.ts` with real localized prices, three buttons (Monthly / Yearly / Lifetime) + Restore.
-- Native iOS: show "Coming soon on iOS" placeholder (until you do App Store later).
-- Web: unchanged PayFast form.
-- Replace RevenueCat debug panel with a Play Billing debug panel (dev only): plugin ready state, loaded products, last verification response.
+## Files touched
 
-## 6. What the user does outside the app
-
-Documented in chat after build:
-1. Google Play Console → create app, complete Payments profile, copy Licensing key (informational, not needed for server-side verification).
-2. Create the three subscription/in-app products with the exact IDs above.
-3. Google Cloud Console → create service account → grant "Service Account User", then in Play Console → Users and permissions → invite the service account email with "View financial data" + "Manage orders and subscriptions". Download JSON key → paste when prompted.
-4. Set Pub/Sub topic for RTDN, point push subscription at `https://nextcareerza.lovable.app/api/public/play-rtdn?token=<GOOGLE_PLAY_RTDN_TOKEN>`. Paste topic name into Play Console → Monetisation setup.
-5. Add package name when prompted.
-
-## 7. Verification
-
-- `bun run build` passes (types + Vite).
-- Upgrade page renders the PayFast form on web with no RevenueCat imports.
-- `rg -i revenuecat` returns nothing.
-- Server-function logs show a 401 on `play-rtdn` without the token and 204 with it.
-
-## Technical notes
-
-- Service-account JWT signing uses Web Crypto `SubtleCrypto.importKey` + `sign` with RS256 (Worker-safe; no `jsonwebtoken` package).
-- All Google API calls are plain `fetch` — no `googleapis` SDK (Node-only).
-- `cordova-plugin-purchase` v13 exposes a tree-shakable ESM `CdvPurchase` namespace; safe to import in a file that is only loaded on native via `platform.ts` guard.
-- `supabaseAdmin` is imported inside handlers only (route + server fn), per project rules.
+- `src/lib/smart-apply.functions.ts` — rewrite to add `searchJobs` + `tailorForJob`, remove old `smartApply`.
+- `src/routes/_authenticated.smart-apply.tsx` — rewrite UI around search + tailor split.
+- Firecrawl connector — link via `standard_connectors--connect` if not already linked.
