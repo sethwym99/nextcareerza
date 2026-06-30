@@ -81,7 +81,7 @@ function Billing() {
 
       {/* Last successful webhook */}
       <section className="glass-card rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-3">Last successful PayFast payment</h2>
+        <h2 className="text-lg font-semibold mb-3">Last successful bill</h2>
         {last ? (
           <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <Row label="Status" value={<span className="text-success font-medium">COMPLETE</span>} />
