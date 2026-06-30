@@ -20,7 +20,7 @@ const apps = [
   { to: "/interview" as const, label: "Interview", icon: Mic, color: "from-rose-500 to-pink-600" },
   { to: "/roadmap" as const, label: "Roadmap", icon: MapIcon, color: "from-violet-500 to-fuchsia-600" },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks, color: "from-cyan-500 to-blue-600" },
-  { to: "/upgrade" as const, label: "Premium", icon: Crown, color: "from-yellow-400 to-amber-600" },
+  { to: "/upgrade" as const, label: "Upgrade", icon: Crown, color: "from-yellow-400 to-amber-600" },
 ];
 
 function greeting() {

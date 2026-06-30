@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
-  head: () => ({ meta: [{ title: "Upgrade to Premium — NextCareer" }] }),
+  head: () => ({ meta: [{ title: "Upgrade — NextCareer" }] }),
   component: Upgrade,
 });
 
@@ -49,7 +49,7 @@ function WebUpgrade() {
         <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-primary" />
         <h1 className="text-xl font-semibold">Redirecting to PayFast…</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          Setting up your R99/mo Premium subscription.
+          Setting up your R99/mo subscription.
         </p>
 
         <form
@@ -148,7 +148,7 @@ function AndroidUpgrade() {
         <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">Go Premium</h1>
+        <h1 className="text-2xl font-bold">Upgrade</h1>
         <p className="text-sm text-muted-foreground mt-2">
           Unlimited Smart Apply, AI interviews, and resume reviews.
         </p>

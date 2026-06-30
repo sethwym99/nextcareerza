@@ -196,7 +196,7 @@ function Landing() {
                 <li key={t} className="flex gap-2"><Check className="h-4 w-4 text-success mt-0.5" />{t}</li>
               ))}
             </ul>
-            <Button asChild variant="hero" className="w-full mt-6 rounded-full"><Link to="/upgrade">Go Premium</Link></Button>
+            <Button asChild variant="hero" className="w-full mt-6 rounded-full"><Link to="/upgrade">Upgrade</Link></Button>
           </div>
         </div>
       </section>
