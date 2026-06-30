@@ -4,7 +4,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getGateway } from "./ai-gateway.server";
 
-const FREE_LIMIT = 3;
+const FREE_LIMITS: Record<string, number> = {
+  cv_analysis: 3,
+  interview_session: 1,
+};
+const FREE_LIMIT = 3; // default fallback used by /usage status
 
 const FreeFeatures = ["cv_analysis", "interview_session"] as const;
 type FreeFeature = (typeof FreeFeatures)[number];
@@ -26,6 +30,8 @@ async function enforceLimit(
 
   if (!FreeFeatures.includes(feature as FreeFeature)) return; // unlimited for others on free
 
+  const cap = FREE_LIMITS[feature] ?? FREE_LIMIT;
+
   const monthStart = new Date();
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
@@ -36,8 +42,12 @@ async function enforceLimit(
     .eq("feature", feature)
     .gte("created_at", monthStart.toISOString());
 
-  if ((count ?? 0) >= FREE_LIMIT) {
-    throw new Error(`Free plan limit reached for this month (${FREE_LIMIT}). Upgrade to Premium for unlimited access.`);
+  if ((count ?? 0) >= cap) {
+    const label =
+      feature === "interview_session"
+        ? `Free plan allows ${cap} interview per month.`
+        : `Free plan limit reached for this month (${cap}).`;
+    throw new Error(`${label} Upgrade for unlimited access.`);
   }
 }
 
@@ -320,5 +330,5 @@ export const getUsageStatus = createServerFn({ method: "GET" })
         .gte("created_at", monthStart.toISOString());
       counts[f] = count ?? 0;
     }
-    return { profile: profile ?? { plan: "free" }, counts, freeLimit: FREE_LIMIT };
+    return { profile: profile ?? { plan: "free" }, counts, freeLimit: FREE_LIMIT, freeLimits: FREE_LIMITS };
   });
