@@ -129,34 +129,20 @@ function AuthedLayout() {
 
       {open && <div className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
 
-      {/* Floating sidebar toggle arrow (mobile) */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Hide menu" : "Show menu"}
-        data-sidebar-toggle
-        className="md:hidden fixed z-[70] h-12 w-12 grid place-items-center rounded-full border border-border bg-primary text-primary-foreground shadow-xl transition-[left,transform] duration-300 active:scale-95"
-        style={{
-          top: "max(5rem, calc(env(safe-area-inset-top) + 4.25rem))",
-          left: open ? "calc(16rem + 0.75rem)" : "0.75rem",
-        }}
-      >
-        {open ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-      </button>
-
       {/* Main */}
       <div className="flex-1 min-w-0">
         <header
           className="md:hidden sticky top-0 z-30 h-14 px-4 flex items-center justify-between bg-background/80 backdrop-blur-xl border-b border-border"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
-          <button onClick={() => setOpen((v) => !v)} className="p-2 min-h-11 min-w-11" aria-label={open ? "Hide menu" : "Show menu"}>{open ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}</button>
+          <button onClick={() => setOpen((v) => !v)} className="p-2 min-h-11 min-w-11" aria-label={open ? "Hide menu" : "Show menu"}><Menu className="h-5 w-5" /></button>
           <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold">
             <img src="/logo.png" alt="NextCareer" className="h-7 w-7 rounded-lg" />
             NextCareer
           </Link>
           <div className="w-11" />
         </header>
+
         <main
           className="p-5 md:p-8 max-w-6xl mx-auto pb-28 md:pb-8"
           style={{ paddingBottom: "max(7rem, calc(env(safe-area-inset-bottom) + 6rem))" }}
