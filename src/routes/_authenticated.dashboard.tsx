@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const apps = [
-  { to: "/smart-apply" as const, label: "Smart Apply", icon: Wand2, color: "from-fuchsia-500 to-purple-600" },
+  { to: "/smart-apply" as const, label: "Smart Apply", icon: Wand2, color: "from-fuchsia-500 to-purple-600", premium: true },
   { to: "/cv-builder" as const, label: "CV Builder", icon: FileText, color: "from-sky-500 to-indigo-600" },
-  { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare, color: "from-emerald-500 to-teal-600" },
+  { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare, color: "from-emerald-500 to-teal-600", premium: true },
   { to: "/job-match" as const, label: "Job Match", icon: Target, color: "from-amber-500 to-orange-600" },
   { to: "/interview" as const, label: "Interview", icon: Mic, color: "from-rose-500 to-pink-600" },
-  { to: "/roadmap" as const, label: "Roadmap", icon: MapIcon, color: "from-violet-500 to-fuchsia-600" },
+  { to: "/roadmap" as const, label: "Roadmap", icon: MapIcon, color: "from-violet-500 to-fuchsia-600", premium: true },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks, color: "from-cyan-500 to-blue-600" },
   { to: "/upgrade" as const, label: "Upgrade", icon: Crown, color: "from-yellow-400 to-amber-600" },
 ];
