@@ -81,13 +81,13 @@ function Billing() {
 
       {/* Last successful webhook */}
       <section className="glass-card rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-3">Last successful PayFast payment</h2>
+        <h2 className="text-lg font-semibold mb-3">Last successful bill</h2>
         {last ? (
           <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <Row label="Status" value={<span className="text-success font-medium">COMPLETE</span>} />
             <Row label="Amount" value={fmtAmount(last.amount_gross, last.currency)} />
             <Row label="Item" value={last.item_name || "—"} />
-            <Row label="PayFast ID" value={<span className="font-mono text-xs">{last.pf_payment_id || "—"}</span>} />
+            <Row label="Reference" value={<span className="font-mono text-xs">{last.pf_payment_id || "—"}</span>} />
             <Row label="Received" value={fmtDate(last.created_at)} />
           </dl>
         ) : (
@@ -99,7 +99,7 @@ function Billing() {
 
       {/* Recent events */}
       <section className="glass-card rounded-2xl p-6">
-        <h2 className="text-lg font-semibold mb-3">Recent webhook events</h2>
+        <h2 className="text-lg font-semibold mb-3">Recent billing activity</h2>
         {recent.length === 0 ? (
           <div className="text-sm text-muted-foreground">No webhook events yet.</div>
         ) : (
