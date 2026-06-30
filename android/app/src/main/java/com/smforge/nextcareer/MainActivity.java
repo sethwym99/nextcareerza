@@ -1,4 +1,4 @@
-package one.nextcareer.app;
+package com.smforge.nextcareer;
 
 import com.getcapacitor.BridgeActivity;
 

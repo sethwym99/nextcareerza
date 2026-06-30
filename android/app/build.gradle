@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "one.nextcareer.app"
+    namespace = "com.smforge.nextcareer"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "one.nextcareer.app"
+        applicationId "com.smforge.nextcareer"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
