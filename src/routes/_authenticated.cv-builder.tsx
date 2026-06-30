@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { analyzeCv } from "@/lib/ai.functions";
 import { getProfile, saveProfile } from "@/lib/profile.functions";
-import { FileText, Sparkles, Copy, Save } from "lucide-react";
+import { FileText, Sparkles, Copy, Save, Download } from "lucide-react";
+import { exportResumePdf } from "@/lib/resume-pdf";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/cv-builder")({
