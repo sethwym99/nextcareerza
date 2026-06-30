@@ -56,6 +56,7 @@ function AuthedLayout() {
     const SIDEBAR_W = 256;
     const EDGE = 24;
     const onStart = (e: TouchEvent) => {
+      if (window.innerWidth >= 768) return;
       const t = e.touches[0];
       if (!t) return;
       const fromOpen = open;
