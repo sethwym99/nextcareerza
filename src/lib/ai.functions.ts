@@ -23,8 +23,11 @@ async function enforceLimit(
   if (plan === "premium") return;
 
   // Premium-only features
-  const premiumOnly = ["cover_letter"];
+  const premiumOnly = ["cover_letter", "roadmap"];
   if (premiumOnly.includes(feature)) {
+    if (feature === "roadmap") {
+      throw new Error("Career Roadmap is a Premium feature. Upgrade to build your personalized plan.");
+    }
     throw new Error("This feature is available on Premium. Upgrade to unlock unlimited cover letters.");
   }
 
