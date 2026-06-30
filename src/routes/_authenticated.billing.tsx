@@ -70,7 +70,7 @@ function Billing() {
             <div className="text-xs text-muted-foreground mt-2">Updated {fmtDate(data?.profile?.updated_at)}</div>
           </div>
           {!isPremium ? (
-            <Button asChild variant="hero"><Link to="/upgrade">Upgrade to Premium</Link></Button>
+            <Button asChild variant="hero"><Link to="/upgrade">Upgrade</Link></Button>
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-success/40 text-success px-3 py-1 text-xs">
               <CheckCircle2 className="h-3.5 w-3.5" /> Active

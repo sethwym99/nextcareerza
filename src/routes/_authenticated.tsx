@@ -187,9 +187,9 @@ function Paywall({ onSkip }: { onSkip: () => void }) {
         <div className="inline-grid place-items-center h-14 w-14 rounded-2xl bg-[image:var(--gradient-primary)] mx-auto mb-5">
           <Crown className="h-7 w-7 text-primary-foreground" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-display font-bold">Unlock NextCareer Premium</h1>
+        <h1 className="text-2xl md:text-3xl font-display font-bold">Unlock NextCareer</h1>
         <p className="text-muted-foreground mt-2">
-          Your account is ready. Subscribe to access every tool and accelerate your job search.
+          Your account is ready. Upgrade to access every tool and accelerate your job search.
         </p>
         <div className="mt-6 text-left space-y-2">
           {features.map((f) => (
@@ -203,7 +203,7 @@ function Paywall({ onSkip }: { onSkip: () => void }) {
           <span className="text-muted-foreground">/month</span>
         </div>
         <Link to="/upgrade" className="block mt-6">
-          <Button variant="hero" className="w-full min-h-12">Subscribe with PayFast</Button>
+          <Button variant="hero" className="w-full min-h-12">Upgrade</Button>
         </Link>
         <Button variant="ghost" className="w-full mt-3 min-h-11" onClick={onSkip}>
           Skip for now
