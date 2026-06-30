@@ -128,6 +128,15 @@ function AuthedLayout() {
 
       {open && <div className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
 
+      {/* Floating sidebar toggle arrow (mobile) */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Hide menu" : "Show menu"}
+        className={`md:hidden fixed top-1/2 -translate-y-1/2 z-[60] h-12 w-7 grid place-items-center rounded-r-xl border border-l-0 border-border bg-sidebar/95 backdrop-blur-xl shadow-lg transition-[left] duration-300 ${open ? "left-64" : "left-0"}`}
+      >
+        {open ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+
       {/* Main */}
       <div className="flex-1 min-w-0">
         <header
