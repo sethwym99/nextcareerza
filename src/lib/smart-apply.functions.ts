@@ -7,21 +7,6 @@ import { getGateway } from "./ai-gateway.server";
 const MODEL = "google/gemini-3-flash-preview";
 const FREE_LIMIT = 1;
 
-function parseJson<T>(text: string): T | null {
-  const cleaned = text.replace(/```json|```/g, "").trim();
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    const s = cleaned.indexOf("{");
-    const e = cleaned.lastIndexOf("}");
-    if (s === -1 || e === -1 || e <= s) return null;
-    try {
-      return JSON.parse(cleaned.slice(s, e + 1)) as T;
-    } catch {
-      return null;
-    }
-  }
-}
 
 function htmlToText(html: string) {
   return html
