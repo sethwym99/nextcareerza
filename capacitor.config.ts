@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "one.nextcareer.app",
+  appId: "com.smforge.nextcareer",
   appName: "NextCareer Jobs",
   webDir: "dist",
   ios: {
