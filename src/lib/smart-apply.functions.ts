@@ -5,62 +5,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getGateway } from "./ai-gateway.server";
 
 const MODEL = "google/gemini-3-flash-preview";
-const FREE_LIMIT = 1;
 
-
-function htmlToText(html: string) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-    .replace(/<!--([\s\S]*?)-->/g, " ")
-    .replace(/<\/(p|div|li|h\d|br|tr|section|article)>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-async function fetchJobPage(url: string): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; NextCareerBot/1.0; +https://nextcareerza.lovable.app)",
-        Accept: "text/html,application/xhtml+xml",
-      },
-    });
-    clearTimeout(t);
-    if (!res.ok) return null;
-    const reader = res.body?.getReader();
-    if (!reader) return null;
-    let received = 0;
-    const max = 512 * 1024;
-    let html = "";
-    const decoder = new TextDecoder();
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      received += value.byteLength;
-      html += decoder.decode(value, { stream: true });
-      if (received >= max) break;
-    }
-    return htmlToText(html).slice(0, 14000);
-  } catch {
-    return null;
-  }
-}
-
-async function enforceSmartLimit(supabase: any, userId: string) {
+async function enforcePremium(supabase: any, userId: string) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan")
@@ -95,98 +41,132 @@ export const saveBaseCv = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// ---------- Smart Apply ----------
+// ---------- Job search via Firecrawl ----------
+export type JobHit = {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  snippet: string;
+  source: string;
+};
 
+function hostnameOf(u: string) {
+  try {
+    return new URL(u).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
 
-export const smartApply = createServerFn({ method: "POST" })
+function splitTitleCompany(raw: string, host: string): { title: string; company: string } {
+  // Common patterns: "Frontend Developer at Acme - Remote | LinkedIn"
+  const cleaned = raw.replace(/\s+\|\s+(LinkedIn|Indeed|Glassdoor|Greenhouse|Lever|Workable).*$/i, "").trim();
+  let m = cleaned.match(/^(.+?)\s+(?:at|@|-|—|·|\|)\s+(.+?)(?:\s+(?:in|-|—|·|\|)\s+.+)?$/i);
+  if (m) return { title: m[1].trim(), company: m[2].trim() };
+  return { title: cleaned, company: host.split(".")[0] || "Unknown" };
+}
+
+export const searchJobs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
-        jobUrl: z.string().url().optional(),
-        jobText: z.string().optional(),
-        cvText: z.string().min(20),
-      })
-      .refine((v) => v.jobUrl || (v.jobText && v.jobText.length > 40), {
-        message: "Provide a job URL or paste the job description.",
+        role: z.string().min(2).max(120),
+        location: z.string().max(120).optional().default(""),
+        seniority: z.string().max(40).optional().default(""),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await enforceSmartLimit(context.supabase, context.userId);
-    const gateway = getGateway();
+    await enforcePremium(context.supabase, context.userId);
 
-    let descriptionText = data.jobText?.trim() ?? "";
-    let fetchedFromUrl = false;
-    if (data.jobUrl && descriptionText.length < 80) {
-      const fetched = await fetchJobPage(data.jobUrl);
-      if (fetched && fetched.length > 200) {
-        descriptionText = fetched;
-        fetchedFromUrl = true;
-      }
-    }
-    if (descriptionText.length < 80) {
-      throw new Error(
-        "Couldn't read that job page (the site likely blocks scraping). Switch to 'Paste text' and paste the job description.",
-      );
-    }
+    const apiKey = process.env.FIRECRAWL_API_KEY;
+    if (!apiKey) throw new Error("Job search isn't configured. Please contact support.");
 
-    // Step 1: extract structured job info via structured output
-    const jobInfoSchema = z.object({
-      company: z.string().default("Unknown"),
-      role: z.string().default("Unknown role"),
-      location: z.string().default(""),
-      seniority: z
-        .enum(["intern", "junior", "mid", "senior", "lead", "exec", "unknown"])
-        .default("unknown"),
-      requiredSkills: z.array(z.string()).default([]),
-      salaryRaw: z.string().default(""),
-      descriptionText: z.string().default(""),
-    });
-    type JobInfo = z.infer<typeof jobInfoSchema>;
+    const parts = [data.seniority, data.role, "jobs"];
+    if (data.location) parts.push(`in ${data.location}`);
+    const query = `${parts.filter(Boolean).join(" ")} site:linkedin.com/jobs OR site:indeed.com OR site:greenhouse.io OR site:lever.co OR site:workable.com OR site:glassdoor.com`;
 
-    let info: JobInfo;
-    try {
-      const { object } = await generateObject({
-        model: gateway(MODEL),
-        schema: jobInfoSchema,
-        system:
-          "Extract clean structured metadata from a job posting. Be concise. Skills are 5-15 short tags.",
-        prompt: `${data.jobUrl ? `URL: ${data.jobUrl}\n\n` : ""}Posting:\n${descriptionText.slice(0, 12000)}`,
-      });
-      info = object;
-      if (!info.descriptionText) info.descriptionText = descriptionText.slice(0, 1500);
-    } catch (e) {
-      console.warn("[smart-apply] jobInfo structured failed, using fallback", e);
-      info = {
-        company: "Unknown",
-        role: "Unknown role",
-        location: "",
-        seniority: "unknown",
-        requiredSkills: [],
-        salaryRaw: "",
-        descriptionText: descriptionText.slice(0, 1500),
-      };
-    }
-
-    // Step 2: tailored pack via structured output (much more reliable than JSON in text)
-    const packSchema = z.object({
-      matchScore: z.number().int().min(0).max(100),
-      matchedSkills: z.array(z.string()).default([]),
-      missingSkills: z.array(z.string()).default([]),
-      missingKeywords: z.array(z.string()).default([]),
-      recommendations: z.array(z.string()).default([]),
-      tailoredCv: z.string().min(50),
-      coverLetter: z.string().min(50),
-      salary: z.object({
-        low: z.number().default(0),
-        high: z.number().default(0),
-        currency: z.string().default("USD"),
-        period: z.enum(["year", "month", "hour"]).default("year"),
-        confidence: z.enum(["low", "medium", "high"]).default("low"),
-        reasoning: z.string().default(""),
+    const res = await fetch("https://api.firecrawl.dev/v2/search", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query,
+        limit: 20,
+        tbs: "qdr:m",
       }),
     });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      if (res.status === 402) throw new Error("Job search quota exhausted. Please try again later.");
+      throw new Error(`Job search failed (${res.status}). ${txt.slice(0, 200)}`);
+    }
+
+    const json: any = await res.json().catch(() => ({}));
+    const raw: any[] = json?.data?.web ?? json?.data ?? json?.web ?? [];
+
+    const jobs: JobHit[] = raw
+      .filter((r) => r?.url && r?.title)
+      .slice(0, 20)
+      .map((r, i) => {
+        const host = hostnameOf(r.url);
+        const { title, company } = splitTitleCompany(String(r.title), host);
+        return {
+          id: `${i}-${r.url}`,
+          title,
+          company,
+          location: data.location || "",
+          url: r.url,
+          snippet: String(r.description || r.snippet || "").slice(0, 600),
+          source: host,
+        };
+      });
+
+    return { jobs };
+  });
+
+// ---------- Tailor for a chosen job ----------
+const packSchema = z.object({
+  matchScore: z.number().int().min(0).max(100),
+  matchedSkills: z.array(z.string()).default([]),
+  missingSkills: z.array(z.string()).default([]),
+  missingKeywords: z.array(z.string()).default([]),
+  recommendations: z.array(z.string()).default([]),
+  tailoredCv: z.string().min(50),
+  coverLetter: z.string().min(50),
+  salary: z.object({
+    low: z.number().default(0),
+    high: z.number().default(0),
+    currency: z.string().default("USD"),
+    period: z.enum(["year", "month", "hour"]).default("year"),
+    confidence: z.enum(["low", "medium", "high"]).default("low"),
+    reasoning: z.string().default(""),
+  }),
+});
+
+export const tailorForJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        jobTitle: z.string().min(2),
+        company: z.string().min(1),
+        location: z.string().default(""),
+        jobSnippet: z.string().min(20),
+        jobUrl: z.string().url().optional(),
+        cvText: z.string().min(20),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await enforcePremium(context.supabase, context.userId);
+    const gateway = getGateway();
 
     let pack: z.infer<typeof packSchema>;
     try {
@@ -195,18 +175,14 @@ export const smartApply = createServerFn({ method: "POST" })
         schema: packSchema,
         system:
           "You are a senior career coach. Tailor the candidate's CV to the job (ATS-friendly, ~400-600 words with sections Summary, Experience, Skills, Education). Write a strong, specific 250-320 word cover letter addressed to the company. Give an honest matchScore (0-100), matched & missing skills, and a realistic salary range based on role, location, and seniority.",
-        prompt: `JOB:\nCompany: ${info.company}\nRole: ${info.role}\nLocation: ${info.location}\nSeniority: ${info.seniority}\nRequired skills: ${info.requiredSkills.join(", ")}\nSalary on posting: ${info.salaryRaw || "(not listed)"}\n\nDescription:\n${info.descriptionText}\n\nCANDIDATE CV:\n${data.cvText.slice(0, 12000)}`,
+        prompt: `JOB:\nCompany: ${data.company}\nRole: ${data.jobTitle}\nLocation: ${data.location}\n\nDescription / posting snippet:\n${data.jobSnippet}\n\nCANDIDATE CV:\n${data.cvText.slice(0, 12000)}`,
       });
       pack = object;
     } catch (e) {
       console.error("[smart-apply] pack generation failed", e);
-      throw new Error(
-        "The AI couldn't produce a tailored pack. Try a shorter CV or a cleaner job description.",
-      );
+      throw new Error("Couldn't tailor for this job. Try another one or shorten your CV.");
     }
 
-
-    // log usage
     try {
       await context.supabase
         .from("usage_events")
@@ -216,8 +192,12 @@ export const smartApply = createServerFn({ method: "POST" })
     }
 
     return {
-      fetchedFromUrl,
-      job: info,
+      job: {
+        company: data.company,
+        role: data.jobTitle,
+        location: data.location,
+        url: data.jobUrl ?? "",
+      },
       ...pack,
     };
   });
