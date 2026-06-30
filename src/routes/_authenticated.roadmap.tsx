@@ -43,6 +43,9 @@ const LS_KEY = "nc.roadmap.v1";
 
 function Page() {
   const fn = useServerFn(generateRoadmap);
+  const usageFn = useServerFn(getUsageStatus);
+  const { data: usage } = useQuery({ queryKey: ["usage"], queryFn: () => usageFn({ data: undefined as any }) });
+  const isPremium = (usage as any)?.profile?.plan === "premium";
   const [goal, setGoal] = useState("");
   const [level, setLevel] = useState("beginner");
   const [months, setMonths] = useState(6);
