@@ -98,7 +98,7 @@ function ResetPasswordPage() {
           <h1 className="font-display text-2xl font-bold">Set a new password</h1>
           {!ready ? (
             <p className="text-sm text-muted-foreground mt-3">
-              Open this page from the reset link in your email. If you got here by mistake,{" "}
+              {error ?? "Open this page from the reset link in your email."}{" "}
               <Link to="/auth" className="text-primary-glow">go back to sign in</Link>.
             </p>
           ) : (
