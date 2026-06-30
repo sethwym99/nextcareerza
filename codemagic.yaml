@@ -1,0 +1,37 @@
+workflows:
+  nextcareer-android:
+    name: NextCareer Android Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      node: 20
+      android_signing:
+        - nextcareer_keystore
+      groups:
+        - google_play
+    scripts:
+      - name: Install bun
+        script: |
+          npm install -g bun
+      - name: Install dependencies
+        script: |
+          bun install
+      - name: Build web bundle
+        script: |
+          bun run build
+      - name: Sync Capacitor Android
+        script: |
+          npx cap sync android
+      - name: Set Android versionCode from build number
+        script: |
+          sed -i "" "s/versionCode 1/versionCode $CM_BUILD_ID/g" android/app/build.gradle || sed -i "s/versionCode 1/versionCode $CM_BUILD_ID/g" android/app/build.gradle
+      - name: Build Android App Bundle
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
