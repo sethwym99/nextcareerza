@@ -96,15 +96,7 @@ export const saveBaseCv = createServerFn({ method: "POST" })
   });
 
 // ---------- Smart Apply ----------
-type JobInfo = {
-  company: string;
-  role: string;
-  location: string;
-  seniority: string;
-  requiredSkills: string[];
-  salaryRaw?: string;
-  descriptionText: string;
-};
+
 
 export const smartApply = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
