@@ -146,7 +146,7 @@ function AuthedLayout() {
           <div className="grid grid-cols-5 h-16">
             {bottomTabs.map((t) => {
               const Icon = t.icon;
-              const active = location.pathname === t.to || (t.to === "/billing" && location.pathname.startsWith("/billing"));
+              const active = location.pathname === t.to || (t.to === "/profile" && location.pathname.startsWith("/profile"));
               return (
                 <Link
                   key={t.to}
