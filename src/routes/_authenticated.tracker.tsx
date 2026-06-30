@@ -248,3 +248,51 @@ function AppForm({ onSubmit, busy }: { onSubmit: (v: Partial<App>) => void; busy
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
 }
+
+function Reminders({ apps }: { apps: App[] }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = apps
+    .map((a) => {
+      const items: { kind: "interview" | "follow-up"; date: string; app: App }[] = [];
+      if (a.interview_date) items.push({ kind: "interview", date: a.interview_date, app: a });
+      if (a.follow_up_date) items.push({ kind: "follow-up", date: a.follow_up_date, app: a });
+      return items;
+    })
+    .flat()
+    .filter((x) => x.date <= addDays(today, 7))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (upcoming.length === 0) return null;
+
+  return (
+    <div className="glass-card rounded-2xl p-4 border border-primary/30">
+      <div className="flex items-center gap-2 mb-3">
+        <Bell className="h-4 w-4 text-primary-glow" />
+        <h3 className="font-semibold text-sm">Reminders · next 7 days</h3>
+      </div>
+      <ul className="space-y-2">
+        {upcoming.map((x, i) => {
+          const overdue = x.date < today;
+          const isToday = x.date === today;
+          return (
+            <li key={i} className="flex items-center justify-between gap-3 text-sm">
+              <span className="truncate">
+                <span className="font-medium">{x.app.company}</span>
+                <span className="text-muted-foreground"> · {x.app.role} · {x.kind}</span>
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${overdue ? "bg-destructive/20 text-destructive" : isToday ? "bg-warning/20 text-warning" : "bg-secondary text-muted-foreground"}`}>
+                {overdue ? "Overdue · " : isToday ? "Today · " : ""}{x.date}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function addDays(iso: string, n: number) {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
