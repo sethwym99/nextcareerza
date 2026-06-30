@@ -99,7 +99,7 @@ function Dashboard() {
           </div>
           <div className="min-w-0 text-primary-foreground">
             <div className="font-semibold">Smart Apply</div>
-            <div className="text-xs opacity-90 truncate">Paste a job link → tailored CV in seconds.</div>
+            <div className="text-xs opacity-90 truncate">Search live jobs, auto-tailor your CV + cover letter.</div>
           </div>
         </div>
       </Link>
