@@ -74,9 +74,12 @@ function Page() {
         <Textarea value={cv} onChange={(e) => setCv(e.target.value)} placeholder="Paste your CV text here…" className="min-h-[260px] font-mono text-sm" />
         <div className="flex justify-between items-center gap-3 flex-wrap">
           <span className="text-xs text-muted-foreground">{cv.length.toLocaleString()} chars · stored on your profile</span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => saveMut.mutate()} disabled={!cv || saveMut.isPending}>
               <Save className="h-4 w-4" /> {saveMut.isPending ? "Saving…" : "Save CV"}
+            </Button>
+            <Button variant="outline" onClick={() => { if (!cv.trim()) { toast.error("Nothing to export"); return; } exportResumePdf(cv, "resume.pdf"); }} disabled={!cv}>
+              <Download className="h-4 w-4" /> Export PDF
             </Button>
             <Button variant="hero" onClick={run} disabled={busy}>
               <Sparkles className="h-4 w-4" /> {busy ? "Analyzing…" : "Analyze with AI"}
@@ -99,11 +102,16 @@ function Page() {
             <Section title="Missing keywords" items={result.missingKeywords} color="text-primary-glow" pill />
           </div>
           <div className="glass-card rounded-2xl p-6 md:col-span-3">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <h3 className="font-semibold">Improved CV (ATS-friendly)</h3>
-              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(result.improvedCv); toast.success("Copied"); }}>
-                <Copy className="h-4 w-4" /> Copy
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(result.improvedCv); toast.success("Copied"); }}>
+                  <Copy className="h-4 w-4" /> Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => exportResumePdf(result.improvedCv, "resume-improved.pdf")}>
+                  <Download className="h-4 w-4" /> PDF
+                </Button>
+              </div>
             </div>
             <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">{result.improvedCv}</pre>
           </div>
