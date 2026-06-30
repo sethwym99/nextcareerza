@@ -42,8 +42,6 @@ function AuthedLayout() {
   const [plan, setPlan] = useState<string | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
   const [skipped, setSkipped] = useState(false);
-  const [dragX, setDragX] = useState<number | null>(null);
-  const touchStart = useRef<{ x: number; y: number; edge: boolean; fromOpen: boolean } | null>(null);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
@@ -51,52 +49,6 @@ function AuthedLayout() {
 
   useEffect(() => setOpen(false), [location.pathname]);
 
-  // Edge-swipe to open / swipe-left to close (mobile)
-  useEffect(() => {
-    const SIDEBAR_W = 256;
-    const EDGE = 24;
-    const onStart = (e: TouchEvent) => {
-      if (window.innerWidth >= 768) return;
-      const t = e.touches[0];
-      if (!t) return;
-      const fromOpen = open;
-      const edge = !fromOpen && t.clientX <= EDGE;
-      if (!fromOpen && !edge) return;
-      touchStart.current = { x: t.clientX, y: t.clientY, edge, fromOpen };
-    };
-    const onMove = (e: TouchEvent) => {
-      const s = touchStart.current;
-      const t = e.touches[0];
-      if (!s || !t) return;
-      const dx = t.clientX - s.x;
-      const dy = t.clientY - s.y;
-      if (Math.abs(dy) > Math.abs(dx)) return;
-      if (s.fromOpen) {
-        if (dx < 0) setDragX(Math.max(dx, -SIDEBAR_W));
-      } else if (s.edge) {
-        if (dx > 0) setDragX(Math.min(dx - SIDEBAR_W, 0));
-      }
-    };
-    const onEnd = () => {
-      const s = touchStart.current;
-      if (s && dragX !== null) {
-        if (s.fromOpen && dragX < -SIDEBAR_W / 3) setOpen(false);
-        else if (!s.fromOpen && dragX > -SIDEBAR_W * 2 / 3) setOpen(true);
-      }
-      touchStart.current = null;
-      setDragX(null);
-    };
-    window.addEventListener("touchstart", onStart, { passive: true });
-    window.addEventListener("touchmove", onMove, { passive: true });
-    window.addEventListener("touchend", onEnd);
-    window.addEventListener("touchcancel", onEnd);
-    return () => {
-      window.removeEventListener("touchstart", onStart);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("touchend", onEnd);
-      window.removeEventListener("touchcancel", onEnd);
-    };
-  }, [open, dragX]);
 
 
   useEffect(() => {
