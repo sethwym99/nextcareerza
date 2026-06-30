@@ -20,7 +20,6 @@ const nav = [
   { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare },
   { to: "/job-match" as const, label: "Job Match", icon: Target },
   { to: "/interview" as const, label: "Interview", icon: Mic },
-  { to: "/interview-history" as const, label: "Interview History", icon: History },
   { to: "/roadmap" as const, label: "Roadmap", icon: Map },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks },
   { to: "/profile" as const, label: "Profile", icon: UserIcon },
