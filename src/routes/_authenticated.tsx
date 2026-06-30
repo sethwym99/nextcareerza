@@ -4,14 +4,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon,
+  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon, History,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthedLayout,
 });
 
-const FREE_ALLOWED = ["/upgrade", "/billing", "/delete-account", "/profile"];
+const FREE_ALLOWED = ["/upgrade", "/billing", "/delete-account", "/profile", "/onboarding"];
 
 const nav = [
   { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
@@ -20,10 +20,12 @@ const nav = [
   { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare },
   { to: "/job-match" as const, label: "Job Match", icon: Target },
   { to: "/interview" as const, label: "Interview", icon: Mic },
+  { to: "/interview-history" as const, label: "Interview History", icon: History },
   { to: "/roadmap" as const, label: "Roadmap", icon: Map },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks },
   { to: "/profile" as const, label: "Profile", icon: UserIcon },
 ];
+
 
 // Bottom tab bar — 4 most-used + "More"
 const bottomTabs = [
@@ -54,17 +56,22 @@ function AuthedLayout() {
     setPlanLoading(true);
     supabase
       .from("profiles")
-      .select("plan")
+      .select("plan, onboarding_completed_at")
       .eq("id", session.user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (!cancelled) {
-          setPlan(data?.plan ?? "free");
+          setPlan((data as any)?.plan ?? "free");
           setPlanLoading(false);
+          const done = (data as any)?.onboarding_completed_at;
+          if (!done && !location.pathname.startsWith("/onboarding")) {
+            navigate({ to: "/onboarding" });
+          }
         }
       });
     return () => { cancelled = true; };
-  }, [session?.user?.id, location.pathname]);
+  }, [session?.user?.id, location.pathname, navigate]);
+
 
   if (loading || !session) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;

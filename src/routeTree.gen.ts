@@ -24,7 +24,9 @@ import { Route as AuthenticatedTrackerRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSmartApplyRouteImport } from './routes/_authenticated.smart-apply'
 import { Route as AuthenticatedRoadmapRouteImport } from './routes/_authenticated.roadmap'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
 import { Route as AuthenticatedJobMatchRouteImport } from './routes/_authenticated.job-match'
+import { Route as AuthenticatedInterviewHistoryRouteImport } from './routes/_authenticated.interview-history'
 import { Route as AuthenticatedInterviewRouteImport } from './routes/_authenticated.interview'
 import { Route as AuthenticatedDeleteAccountRouteImport } from './routes/_authenticated.delete-account'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
@@ -111,11 +113,22 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedJobMatchRoute = AuthenticatedJobMatchRouteImport.update({
   id: '/job-match',
   path: '/job-match',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInterviewHistoryRoute =
+  AuthenticatedInterviewHistoryRouteImport.update({
+    id: '/interview-history',
+    path: '/interview-history',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInterviewRoute = AuthenticatedInterviewRouteImport.update({
   id: '/interview',
   path: '/interview',
@@ -188,7 +201,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/delete-account': typeof AuthenticatedDeleteAccountRoute
   '/interview': typeof AuthenticatedInterviewRoute
+  '/interview-history': typeof AuthenticatedInterviewHistoryRoute
   '/job-match': typeof AuthenticatedJobMatchRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/smart-apply': typeof AuthenticatedSmartApplyRoute
@@ -216,7 +231,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/delete-account': typeof AuthenticatedDeleteAccountRoute
   '/interview': typeof AuthenticatedInterviewRoute
+  '/interview-history': typeof AuthenticatedInterviewHistoryRoute
   '/job-match': typeof AuthenticatedJobMatchRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/roadmap': typeof AuthenticatedRoadmapRoute
   '/smart-apply': typeof AuthenticatedSmartApplyRoute
@@ -246,7 +263,9 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/delete-account': typeof AuthenticatedDeleteAccountRoute
   '/_authenticated/interview': typeof AuthenticatedInterviewRoute
+  '/_authenticated/interview-history': typeof AuthenticatedInterviewHistoryRoute
   '/_authenticated/job-match': typeof AuthenticatedJobMatchRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/roadmap': typeof AuthenticatedRoadmapRoute
   '/_authenticated/smart-apply': typeof AuthenticatedSmartApplyRoute
@@ -276,7 +295,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/delete-account'
     | '/interview'
+    | '/interview-history'
     | '/job-match'
+    | '/onboarding'
     | '/profile'
     | '/roadmap'
     | '/smart-apply'
@@ -304,7 +325,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/delete-account'
     | '/interview'
+    | '/interview-history'
     | '/job-match'
+    | '/onboarding'
     | '/profile'
     | '/roadmap'
     | '/smart-apply'
@@ -333,7 +356,9 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/delete-account'
     | '/_authenticated/interview'
+    | '/_authenticated/interview-history'
     | '/_authenticated/job-match'
+    | '/_authenticated/onboarding'
     | '/_authenticated/profile'
     | '/_authenticated/roadmap'
     | '/_authenticated/smart-apply'
@@ -474,11 +499,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/job-match': {
       id: '/_authenticated/job-match'
       path: '/job-match'
       fullPath: '/job-match'
       preLoaderRoute: typeof AuthenticatedJobMatchRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview-history': {
+      id: '/_authenticated/interview-history'
+      path: '/interview-history'
+      fullPath: '/interview-history'
+      preLoaderRoute: typeof AuthenticatedInterviewHistoryRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/interview': {
@@ -568,7 +607,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeleteAccountRoute: typeof AuthenticatedDeleteAccountRoute
   AuthenticatedInterviewRoute: typeof AuthenticatedInterviewRoute
+  AuthenticatedInterviewHistoryRoute: typeof AuthenticatedInterviewHistoryRoute
   AuthenticatedJobMatchRoute: typeof AuthenticatedJobMatchRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRoadmapRoute: typeof AuthenticatedRoadmapRoute
   AuthenticatedSmartApplyRoute: typeof AuthenticatedSmartApplyRoute
@@ -583,7 +624,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeleteAccountRoute: AuthenticatedDeleteAccountRoute,
   AuthenticatedInterviewRoute: AuthenticatedInterviewRoute,
+  AuthenticatedInterviewHistoryRoute: AuthenticatedInterviewHistoryRoute,
   AuthenticatedJobMatchRoute: AuthenticatedJobMatchRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRoadmapRoute: AuthenticatedRoadmapRoute,
   AuthenticatedSmartApplyRoute: AuthenticatedSmartApplyRoute,

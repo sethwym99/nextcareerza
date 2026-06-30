@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
+import { saveInterviewSession } from "@/lib/interview-sessions.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
@@ -106,6 +107,7 @@ function focusLabel(status: FocusStatus) {
 function Page() {
   const startFn = useServerFn(startInterviewSession);
   const turnFn = useServerFn(interviewTurn);
+  const saveFn = useServerFn(saveInterviewSession);
 
   const [role, setRole] = useState("");
   const [phase, setPhase] = useState<Phase>("setup");
@@ -519,7 +521,26 @@ function Page() {
         finalize: true,
       },
     });
-    if (final.kind === "final") setReport(final.report);
+    if (final.kind === "final") {
+      setReport(final.report);
+      try {
+        await saveFn({
+          data: {
+            role: initialRole,
+            score: final.report.score ?? 0,
+            verdict: final.report.verdict ?? "",
+            summary: final.report.summary ?? "",
+            strengths: final.report.strengths ?? [],
+            improvements: final.report.improvements ?? [],
+            redFlags: final.report.redFlags ?? [],
+            questionCount: convo.filter((m) => m.role === "interviewer").length,
+            lookAwayCount: lookAwayCountRef.current,
+          },
+        });
+      } catch {
+        /* non-fatal */
+      }
+    }
     setPhase("done");
   }
 
