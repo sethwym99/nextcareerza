@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthedLayout,
 });
 
-const FREE_ALLOWED = ["/upgrade", "/billing", "/delete-account"];
+const FREE_ALLOWED = ["/upgrade", "/billing", "/delete-account", "/profile"];
 
 const nav = [
   { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
@@ -22,6 +22,7 @@ const nav = [
   { to: "/interview" as const, label: "Interview", icon: Mic },
   { to: "/roadmap" as const, label: "Roadmap", icon: Map },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks },
+  { to: "/profile" as const, label: "Profile", icon: UserIcon },
 ];
 
 // Bottom tab bar — 4 most-used + "More"
@@ -29,7 +30,7 @@ const bottomTabs = [
   { to: "/dashboard" as const, label: "Home", icon: LayoutDashboard },
   { to: "/smart-apply" as const, label: "Apply", icon: Wand2 },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks },
-  { to: "/billing" as const, label: "Account", icon: UserIcon },
+  { to: "/profile" as const, label: "Profile", icon: UserIcon },
 ] as const;
 
 function AuthedLayout() {
