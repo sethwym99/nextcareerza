@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon, History,
+  FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -20,7 +20,6 @@ const nav = [
   { to: "/cover-letter" as const, label: "Cover Letter", icon: MessageSquare },
   { to: "/job-match" as const, label: "Job Match", icon: Target },
   { to: "/interview" as const, label: "Interview", icon: Mic },
-  { to: "/interview-history" as const, label: "Interview History", icon: History },
   { to: "/roadmap" as const, label: "Roadmap", icon: Map },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks },
   { to: "/profile" as const, label: "Profile", icon: UserIcon },
@@ -43,12 +42,62 @@ function AuthedLayout() {
   const [plan, setPlan] = useState<string | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
   const [skipped, setSkipped] = useState(false);
+  const [dragX, setDragX] = useState<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number; edge: boolean; fromOpen: boolean } | null>(null);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
   }, [loading, session, navigate]);
 
   useEffect(() => setOpen(false), [location.pathname]);
+
+  // Edge-swipe to open / swipe-left to close (mobile)
+  useEffect(() => {
+    const SIDEBAR_W = 256;
+    const EDGE = 24;
+    const onStart = (e: TouchEvent) => {
+      if (window.innerWidth >= 768) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const fromOpen = open;
+      const edge = !fromOpen && t.clientX <= EDGE;
+      if (!fromOpen && !edge) return;
+      touchStart.current = { x: t.clientX, y: t.clientY, edge, fromOpen };
+    };
+    const onMove = (e: TouchEvent) => {
+      const s = touchStart.current;
+      const t = e.touches[0];
+      if (!s || !t) return;
+      const dx = t.clientX - s.x;
+      const dy = t.clientY - s.y;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      if (s.fromOpen) {
+        if (dx < 0) setDragX(Math.max(dx, -SIDEBAR_W));
+      } else if (s.edge) {
+        if (dx > 0) setDragX(Math.min(dx - SIDEBAR_W, 0));
+      }
+    };
+    const onEnd = () => {
+      const s = touchStart.current;
+      if (s && dragX !== null) {
+        if (s.fromOpen && dragX < -SIDEBAR_W / 3) setOpen(false);
+        else if (!s.fromOpen && dragX > -SIDEBAR_W * 2 / 3) setOpen(true);
+      }
+      touchStart.current = null;
+      setDragX(null);
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchend", onEnd);
+    window.addEventListener("touchcancel", onEnd);
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onEnd);
+    };
+  }, [open, dragX]);
+
 
   useEffect(() => {
     if (!session?.user) return;
@@ -85,8 +134,12 @@ function AuthedLayout() {
     <div className="min-h-screen flex">
       {/* Sidebar — desktop + mobile drawer */}
       <aside
-        className={`fixed md:sticky top-0 z-50 h-screen w-64 shrink-0 border-r border-border bg-sidebar/95 backdrop-blur-xl transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
-        style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+        className={`fixed md:sticky top-0 z-50 h-screen w-64 shrink-0 border-r border-border bg-sidebar/95 backdrop-blur-xl md:translate-x-0 ${dragX === null ? "transition-transform" : ""} ${open ? "translate-x-0" : "-translate-x-full"}`}
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+          transform: dragX !== null ? `translateX(${dragX}px)` : undefined,
+        }}
       >
         <div className="h-16 px-5 flex items-center justify-between border-b border-border">
           <Link to="/dashboard" className="flex items-center gap-2 font-display font-bold">

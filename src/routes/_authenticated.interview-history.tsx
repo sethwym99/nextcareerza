@@ -5,6 +5,7 @@ import { listInterviewSessions } from "@/lib/interview-sessions.functions";
 import { Mic, TrendingUp, Trophy } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { InterviewTabs } from "@/components/interview/InterviewTabs";
 
 export const Route = createFileRoute("/_authenticated/interview-history")({
   head: () => ({ meta: [{ title: "Interview History — NextCareer" }] }),
@@ -32,8 +33,9 @@ function Page() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold flex items-center gap-3"><Mic className="h-7 w-7 text-primary-glow" /> Interview History</h1>
-        <p className="text-muted-foreground mt-1">Track every practice run and watch your progress.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3"><Mic className="h-6 w-6 sm:h-7 sm:w-7 text-primary-glow" /> Interview</h1>
+        <p className="text-muted-foreground mt-1 text-sm sm:text-base">Track every practice run and watch your progress.</p>
+        <div className="mt-3"><InterviewTabs /></div>
       </header>
 
       {isLoading ? (
