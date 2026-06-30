@@ -605,14 +605,15 @@ function Page() {
     return (
       <div className="space-y-6">
         <header>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Mic className="h-7 w-7 text-primary-glow" /> AI Voice Interview
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+            <Mic className="h-6 w-6 sm:h-7 sm:w-7 text-primary-glow" /> AI Voice Interview
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Real spoken interview with face tracking and a final score.
           </p>
+          <div className="mt-3"><InterviewTabs /></div>
         </header>
-        <div className="glass-card rounded-2xl p-8 max-w-xl mx-auto text-center">
+        <div className="glass-card rounded-2xl p-6 sm:p-8 max-w-xl mx-auto text-center">
           <Sparkles className="h-8 w-8 text-primary-glow mx-auto mb-3" />
           <h2 className="text-xl font-semibold">What role are you practicing for?</h2>
           <p className="text-muted-foreground text-sm mt-2">
