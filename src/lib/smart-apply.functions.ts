@@ -150,74 +150,84 @@ export const smartApply = createServerFn({ method: "POST" })
     }
     if (descriptionText.length < 80) {
       throw new Error(
-        "Couldn't read that job page. Paste the job description text and try again.",
+        "Couldn't read that job page (the site likely blocks scraping). Switch to 'Paste text' and paste the job description.",
       );
     }
 
-    // Step 1: extract structured job info
-    const { text: infoText } = await generateText({
-      model: gateway(MODEL),
-      system:
-        "Extract job posting metadata. Return ONLY JSON (no fences) with keys: company string, role string, location string, seniority string (one of: intern, junior, mid, senior, lead, exec, unknown), requiredSkills string array (5-15), salaryRaw string (empty if none), descriptionText string (clean 1-2 paragraph summary).",
-      prompt: `${data.jobUrl ? `URL: ${data.jobUrl}\n\n` : ""}Raw page/description:\n${descriptionText}`,
+    // Step 1: extract structured job info via structured output
+    const jobInfoSchema = z.object({
+      company: z.string().default("Unknown"),
+      role: z.string().default("Unknown role"),
+      location: z.string().default(""),
+      seniority: z
+        .enum(["intern", "junior", "mid", "senior", "lead", "exec", "unknown"])
+        .default("unknown"),
+      requiredSkills: z.array(z.string()).default([]),
+      salaryRaw: z.string().default(""),
+      descriptionText: z.string().default(""),
     });
-    const info =
-      parseJson<JobInfo>(infoText) ?? {
+    type JobInfo = z.infer<typeof jobInfoSchema>;
+
+    let info: JobInfo;
+    try {
+      const { object } = await generateObject({
+        model: gateway(MODEL),
+        schema: jobInfoSchema,
+        system:
+          "Extract clean structured metadata from a job posting. Be concise. Skills are 5-15 short tags.",
+        prompt: `${data.jobUrl ? `URL: ${data.jobUrl}\n\n` : ""}Posting:\n${descriptionText.slice(0, 12000)}`,
+      });
+      info = object;
+      if (!info.descriptionText) info.descriptionText = descriptionText.slice(0, 1500);
+    } catch (e) {
+      console.warn("[smart-apply] jobInfo structured failed, using fallback", e);
+      info = {
         company: "Unknown",
         role: "Unknown role",
         location: "",
         seniority: "unknown",
         requiredSkills: [],
-        descriptionText: descriptionText.slice(0, 1200),
+        salaryRaw: "",
+        descriptionText: descriptionText.slice(0, 1500),
       };
+    }
 
-    // Step 2: match score + tailored CV + cover letter + salary in ONE call
-    const { text: bundle } = await generateText({
-      model: gateway(MODEL),
-      system:
-        "You are a senior career coach. Return ONLY valid JSON (no fences) with keys: " +
-        "matchScore number 0-100, " +
-        "matchedSkills string array, missingSkills string array, missingKeywords string array, " +
-        "recommendations string array, " +
-        "tailoredCv string (a full rewritten CV tailored to this job, ATS-friendly, ~400-600 words, with sections Summary, Experience, Skills, Education), " +
-        "coverLetter string (~250-320 words, addressed to the company, specific to the role, strong opening and CTA), " +
-        "salary object {low number, high number, currency string (ISO 4217 like USD, ZAR, EUR), period string ('year'|'month'|'hour'), confidence string ('low'|'medium'|'high'), reasoning string}.",
-      prompt: `JOB:\nCompany: ${info.company}\nRole: ${info.role}\nLocation: ${info.location}\nSeniority: ${info.seniority}\nRequired skills: ${info.requiredSkills.join(", ")}\nSalary on posting: ${info.salaryRaw ?? "(not listed)"}\n\nDescription:\n${info.descriptionText}\n\nCANDIDATE CV:\n${data.cvText}`,
+    // Step 2: tailored pack via structured output (much more reliable than JSON in text)
+    const packSchema = z.object({
+      matchScore: z.number().int().min(0).max(100),
+      matchedSkills: z.array(z.string()).default([]),
+      missingSkills: z.array(z.string()).default([]),
+      missingKeywords: z.array(z.string()).default([]),
+      recommendations: z.array(z.string()).default([]),
+      tailoredCv: z.string().min(50),
+      coverLetter: z.string().min(50),
+      salary: z.object({
+        low: z.number().default(0),
+        high: z.number().default(0),
+        currency: z.string().default("USD"),
+        period: z.enum(["year", "month", "hour"]).default("year"),
+        confidence: z.enum(["low", "medium", "high"]).default("low"),
+        reasoning: z.string().default(""),
+      }),
     });
-    const pack =
-      parseJson<{
-        matchScore: number;
-        matchedSkills: string[];
-        missingSkills: string[];
-        missingKeywords: string[];
-        recommendations: string[];
-        tailoredCv: string;
-        coverLetter: string;
-        salary: {
-          low: number;
-          high: number;
-          currency: string;
-          period: string;
-          confidence: string;
-          reasoning: string;
-        };
-      }>(bundle) ?? {
-        matchScore: 50,
-        matchedSkills: [],
-        missingSkills: info.requiredSkills,
-        missingKeywords: [],
-        recommendations: ["Tailor the summary to mirror the job title."],
-        tailoredCv: data.cvText,
-        coverLetter: "",
-        salary: {
-          low: 0,
-          high: 0,
-          currency: "USD",
-          period: "year",
-          confidence: "low",
-          reasoning: "Estimate unavailable.",
-        },
-      };
+
+    let pack: z.infer<typeof packSchema>;
+    try {
+      const { object } = await generateObject({
+        model: gateway(MODEL),
+        schema: packSchema,
+        system:
+          "You are a senior career coach. Tailor the candidate's CV to the job (ATS-friendly, ~400-600 words with sections Summary, Experience, Skills, Education). Write a strong, specific 250-320 word cover letter addressed to the company. Give an honest matchScore (0-100), matched & missing skills, and a realistic salary range based on role, location, and seniority.",
+        prompt: `JOB:\nCompany: ${info.company}\nRole: ${info.role}\nLocation: ${info.location}\nSeniority: ${info.seniority}\nRequired skills: ${info.requiredSkills.join(", ")}\nSalary on posting: ${info.salaryRaw || "(not listed)"}\n\nDescription:\n${info.descriptionText}\n\nCANDIDATE CV:\n${data.cvText.slice(0, 12000)}`,
+      });
+      pack = object;
+    } catch (e) {
+      console.error("[smart-apply] pack generation failed", e);
+      throw new Error(
+        "The AI couldn't produce a tailored pack. Try a shorter CV or a cleaner job description.",
+      );
+    }
+
 
     // log usage
     try {
