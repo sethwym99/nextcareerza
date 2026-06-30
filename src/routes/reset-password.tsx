@@ -23,16 +23,48 @@ function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Supabase puts type=recovery in the URL hash; the SDK picks up the session automatically.
+    let cancelled = false;
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
+
+    (async () => {
+      // 1) New flow: ?token_hash=...&type=recovery (link sent by our webhook)
+      const params = new URLSearchParams(window.location.search);
+      const token_hash = params.get("token_hash");
+      const type = params.get("type");
+      if (token_hash && type) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash,
+          type: type as "recovery",
+        });
+        if (cancelled) return;
+        if (error) {
+          setError(
+            "This reset link has expired or was already used. Request a new one from the sign-in page."
+          );
+        } else {
+          setReady(true);
+          // strip the token from the URL
+          window.history.replaceState({}, "", "/reset-password");
+        }
+        return;
+      }
+
+      // 2) Legacy flow: hash fragment session set by Supabase /verify redirect
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled && data.session) setReady(true);
+    })();
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
+
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,7 +98,7 @@ function ResetPasswordPage() {
           <h1 className="font-display text-2xl font-bold">Set a new password</h1>
           {!ready ? (
             <p className="text-sm text-muted-foreground mt-3">
-              Open this page from the reset link in your email. If you got here by mistake,{" "}
+              {error ?? "Open this page from the reset link in your email."}{" "}
               <Link to="/auth" className="text-primary-glow">go back to sign in</Link>.
             </p>
           ) : (

@@ -131,12 +131,31 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           )
         }
 
+        // For recovery emails, bypass Supabase's /verify redirect (which gets
+        // pre-fetched by Gmail/Outlook scanners and burns the one-time token
+        // before the user clicks). Link straight to our reset page with the
+        // token_hash so verifyOtp runs only on a real click.
+        let confirmationUrl: string = payload.data.url
+        if (emailType === 'recovery' && payload.data.token_hash) {
+          const base =
+            payload.data.redirect_to ||
+            payload.data.site_url ||
+            `https://${ROOT_DOMAIN}/reset-password`
+          const target = base.includes('/reset-password')
+            ? base
+            : `${base.replace(/\/$/, '')}/reset-password`
+          const u = new URL(target)
+          u.searchParams.set('token_hash', payload.data.token_hash)
+          u.searchParams.set('type', 'recovery')
+          confirmationUrl = u.toString()
+        }
+
         // Build template props from payload.data (HookData structure)
         const templateProps = {
           siteName: SITE_NAME,
           siteUrl: `https://${ROOT_DOMAIN}`,
           recipient: payload.data.email,
-          confirmationUrl: payload.data.url,
+          confirmationUrl,
           token: payload.data.token,
           email: payload.data.email,
           oldEmail: payload.data.old_email,
