@@ -5,6 +5,7 @@ import { listInterviewSessions } from "@/lib/interview-sessions.functions";
 import { Mic, TrendingUp, Trophy } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
+import { InterviewTabs } from "@/components/interview/InterviewTabs";
 
 export const Route = createFileRoute("/_authenticated/interview-history")({
   head: () => ({ meta: [{ title: "Interview History — NextCareer" }] }),
