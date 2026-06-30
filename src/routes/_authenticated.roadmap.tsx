@@ -1,11 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { generateRoadmap } from "@/lib/ai.functions";
+import { generateRoadmap, getUsageStatus } from "@/lib/ai.functions";
 import {
   Map as MapIcon,
   Sparkles,
@@ -15,6 +16,7 @@ import {
   Trophy,
   RotateCcw,
   Download,
+  Crown,
 } from "lucide-react";
 import { toast } from "sonner";
 
