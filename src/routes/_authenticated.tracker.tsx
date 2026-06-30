@@ -111,9 +111,19 @@ function Page() {
         ))}
       </div>
 
+      <Reminders apps={apps} />
+
       <div className="glass-card rounded-2xl overflow-hidden">
         {apps.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">No applications yet. Add your first one.</div>
+          <div className="p-2">
+            <EmptyState
+              icon={ListChecks}
+              title="No applications yet"
+              description="Add your first job application and we'll remind you about interviews and follow-ups."
+              actionLabel="Add application"
+              onAction={() => setOpen(true)}
+            />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
