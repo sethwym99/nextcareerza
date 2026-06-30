@@ -62,7 +62,7 @@ function Page() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold flex items-center gap-3"><FileText className="h-7 w-7 text-primary-glow" /> CV Builder</h1>
-        <p className="text-muted-foreground mt-1">Upload a CV or paste it below. We'll score it and rewrite it ATS-friendly.</p>
+        <p className="text-muted-foreground mt-1">Upload a CV or paste it below. We'll score it and rewrite it ATS-friendly. Your CV is saved on your <Link to="/profile" className="underline">profile</Link>.</p>
       </header>
 
       <div className="glass-card rounded-2xl p-6 space-y-4">
@@ -71,12 +71,19 @@ function Page() {
           <span className="text-xs text-muted-foreground">or paste below</span>
         </div>
         <Textarea value={cv} onChange={(e) => setCv(e.target.value)} placeholder="Paste your CV text here…" className="min-h-[260px] font-mono text-sm" />
-        <div className="flex justify-end">
-          <Button variant="hero" onClick={run} disabled={busy}>
-            <Sparkles className="h-4 w-4" /> {busy ? "Analyzing…" : "Analyze with AI"}
-          </Button>
+        <div className="flex justify-between items-center gap-3 flex-wrap">
+          <span className="text-xs text-muted-foreground">{cv.length.toLocaleString()} chars · stored on your profile</span>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => saveMut.mutate()} disabled={!cv || saveMut.isPending}>
+              <Save className="h-4 w-4" /> {saveMut.isPending ? "Saving…" : "Save CV"}
+            </Button>
+            <Button variant="hero" onClick={run} disabled={busy}>
+              <Sparkles className="h-4 w-4" /> {busy ? "Analyzing…" : "Analyze with AI"}
+            </Button>
+          </div>
         </div>
       </div>
+
 
       {result && (
         <div className="grid md:grid-cols-3 gap-4">
