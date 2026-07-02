@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
 
 const NOTIFY_URL =
   "https://project--0d4ca1e2-ec48-4d2b-8543-5744fc5f0f2c.lovable.app/api/public/payments";
-const RECEIVER = "35023613";
+const RECEIVER = "35985205";
 
 function Upgrade() {
   if (isNativeApp()) {
@@ -62,7 +62,7 @@ function WebUpgrade() {
           <input type="hidden" name="receiver" value={RECEIVER} />
           <input type="hidden" name="notify_url" value={NOTIFY_URL} />
           <input type="hidden" name="amount" value="99" />
-          <input type="hidden" name="item_name" value="NextCareer Premium" />
+          <input type="hidden" name="item_name" value="NextCareer Premium(Monthly)" />
           <input type="hidden" name="subscription_type" value="1" />
           <input type="hidden" name="recurring_amount" value="99" />
           <input type="hidden" name="cycles" value="0" />
