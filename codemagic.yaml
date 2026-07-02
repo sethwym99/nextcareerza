@@ -26,11 +26,17 @@ workflows:
       - name: Set up signing
         script: |
           KEYSTORE="${CM_KEYSTORE_PATH:-$KEYSTORE_PATH}"
-          if [ -n "$KEYSTORE" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+          KS_PASS="${CM_KEYSTORE_PASSWORD:-$KEYSTORE_PASSWORD}"
+          K_ALIAS="${CM_KEY_ALIAS:-$KEY_ALIAS}"
+          K_PASS="${CM_KEY_PASSWORD:-$KEY_PASSWORD}"
+          if [ -n "$KEYSTORE" ] && [ -n "$KS_PASS" ] && [ -n "$K_ALIAS" ] && [ -n "$K_PASS" ]; then
             echo "storeFile=$KEYSTORE" > android/key.properties
-            echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
-            echo "keyAlias=$KEY_ALIAS" >> android/key.properties
-            echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+            echo "storePassword=$KS_PASS" >> android/key.properties
+            echo "keyAlias=$K_ALIAS" >> android/key.properties
+            echo "keyPassword=$K_PASS" >> android/key.properties
+            echo "key.properties written — release AAB will be signed"
+          else
+            echo "Signing vars missing — build will produce an UNSIGNED aab"
           fi
       - name: Build release AAB
         script: |
