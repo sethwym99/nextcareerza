@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import {
   Loader2,
@@ -18,6 +19,7 @@ import {
   PRODUCT_IDS,
   type PlayProduct,
 } from "@/lib/play-billing";
+import { checkPlayBillingSetup } from "@/lib/play-billing.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -28,6 +30,15 @@ export const Route = createFileRoute("/_authenticated/upgrade")({
 const NOTIFY_URL =
   "https://project--0d4ca1e2-ec48-4d2b-8543-5744fc5f0f2c.lovable.app/api/public/payments";
 const RECEIVER = "35985205";
+
+type PlaySetupCheck = {
+  ok: boolean;
+  packageNameConfigured: boolean;
+  serviceAccountConfigured: boolean;
+  tokenExchangeOk: boolean;
+  packageAccessOk: boolean;
+  error?: string;
+};
 
 function Upgrade() {
   if (isNativeApp()) {
@@ -92,27 +103,48 @@ function IosComingSoon() {
 }
 
 function AndroidUpgrade() {
+  const checkSetup = useServerFn(checkPlayBillingSetup);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<PlayProduct[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [setupCheck, setSetupCheck] = useState<PlaySetupCheck | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
+
+  const refreshBillingStatus = () => setBillingStatus(getBillingStatus());
 
   useEffect(() => {
     (async () => {
       try {
+        try {
+          const setup = await checkSetup();
+          setSetupCheck(setup as PlaySetupCheck);
+          if (!(setup as PlaySetupCheck).ok && (setup as PlaySetupCheck).error) {
+            setSetupError((setup as PlaySetupCheck).error ?? null);
+          }
+        } catch (e: any) {
+          setSetupError(e?.message || "Could not check Google Play backend setup");
+        }
         await initBilling();
-        // Give the store a tick to load products.
-        await new Promise((r) => setTimeout(r, 1500));
         const offerings = await getOfferings();
         setProducts(offerings);
       } catch (e) {
         console.error(e);
         toast.error("Could not load subscription options");
       } finally {
+        refreshBillingStatus();
         setLoading(false);
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!showDebug) return;
+    refreshBillingStatus();
+    const id = window.setInterval(refreshBillingStatus, 1000);
+    return () => window.clearInterval(id);
+  }, [showDebug]);
 
   const buy = async (productId: string) => {
     setBusy(productId);
@@ -124,6 +156,7 @@ function AndroidUpgrade() {
         toast.error(e?.message || "Purchase failed");
       }
     } finally {
+      refreshBillingStatus();
       setBusy(null);
     }
   };
@@ -136,11 +169,12 @@ function AndroidUpgrade() {
     } catch (e: any) {
       toast.error(e?.message || "Restore failed");
     } finally {
+      refreshBillingStatus();
       setBusy(null);
     }
   };
 
-  const status = getBillingStatus();
+  const status = billingStatus;
 
   return (
     <div className="min-h-[80vh] px-4 py-8 max-w-md mx-auto">
@@ -161,28 +195,25 @@ function AndroidUpgrade() {
       ) : products.length === 0 ? (
         <div className="glass-card rounded-2xl p-6 text-sm space-y-4">
           <p className="font-semibold text-foreground">
-            Google Play subscriptions are not set up yet.
+            Google Play products are not available on this install.
           </p>
+          {setupError && (
+            <p className="text-destructive text-xs leading-relaxed">
+              Backend check: {setupError}
+            </p>
+          )}
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
-            <li>Create your app in Google Play Console and complete your Payments profile.</li>
+            <li>Install the app from the Google Play internal testing opt-in link, not a side-loaded APK.</li>
             <li>
-              Under <strong className="text-foreground">Monetisation → Products</strong>,
-              create products with these exact IDs:
+              Confirm these exact products are active in Google Play:
               <ul className="mt-1 ml-4 list-disc space-y-1">
                 <li><code>{PRODUCT_IDS.monthly}</code></li>
                 <li><code>{PRODUCT_IDS.yearly}</code></li>
                 <li><code>{PRODUCT_IDS.lifetime}</code></li>
               </ul>
             </li>
-            <li>
-              Create a Google Cloud service account, grant it access in Play
-              Console → Users and permissions (View financial data + Manage
-              orders).
-            </li>
-            <li>
-              Paste the service-account JSON, your package name, and the RTDN
-              token into project secrets when prompted.
-            </li>
+            <li>Make sure your tester Google account accepted the test invite and can see this app in Play Store.</li>
+            <li>Open the debug details below and check product count, loaded IDs, and last error.</li>
           </ol>
         </div>
       ) : (
@@ -222,49 +253,64 @@ function AndroidUpgrade() {
         Restore purchases
       </button>
 
-      {import.meta.env.DEV && (
-        <div className="mt-6">
-          <button
-            onClick={() => setShowDebug((s) => !s)}
-            className="w-full inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Bug className="h-3.5 w-3.5" />
-            {showDebug ? "Hide debug info" : "Show debug info"}
-            {showDebug ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )}
-          </button>
-
-          {showDebug && (
-            <div className="mt-3 glass-card rounded-xl p-4 text-xs space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Platform</span>
-                <span className="font-mono">{status.platform}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Billing initialized</span>
-                <span className="font-mono">{status.initialized ? "Yes" : "No"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Products loaded</span>
-                <span className="font-mono">{status.productCount}</span>
-              </div>
-              {status.lastVerify && (
-                <details className="pt-2">
-                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                    Last verify response
-                  </summary>
-                  <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/30 p-2 text-[10px]">
-                    {JSON.stringify(status.lastVerify, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
+      <div className="mt-6">
+        <button
+          onClick={() => setShowDebug((s) => !s)}
+          className="w-full inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Bug className="h-3.5 w-3.5" />
+          {showDebug ? "Hide debug info" : "Show debug info"}
+          {showDebug ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
           )}
-        </div>
-      )}
+        </button>
+
+        {showDebug && (
+          <div className="mt-3 glass-card rounded-xl p-4 text-xs space-y-2">
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Platform</span>
+              <span className="font-mono text-right">{status.platform}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Billing ready</span>
+              <span className="font-mono text-right">{status.ready ? "Yes" : "No"}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Billing initialized</span>
+              <span className="font-mono text-right">{status.initialized ? "Yes" : "No"}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Products loaded</span>
+              <span className="font-mono text-right">{status.productCount}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Backend setup</span>
+              <span className="font-mono text-right">
+                {setupCheck ? (setupCheck.ok ? "OK" : "Needs attention") : "Checking"}
+              </span>
+            </div>
+            {setupCheck && (
+              <div className="grid grid-cols-2 gap-2 pt-1 text-muted-foreground">
+                <span>Package</span><span className="font-mono text-right">{setupCheck.packageNameConfigured ? "set" : "missing"}</span>
+                <span>Service account</span><span className="font-mono text-right">{setupCheck.serviceAccountConfigured ? "set" : "missing"}</span>
+                <span>Token exchange</span><span className="font-mono text-right">{setupCheck.tokenExchangeOk ? "ok" : "not ok"}</span>
+                <span>Package access</span><span className="font-mono text-right">{setupCheck.packageAccessOk ? "ok" : "not ok"}</span>
+              </div>
+            )}
+            {setupError && <p className="text-destructive leading-relaxed">{setupError}</p>}
+            <details className="pt-2">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                Billing details
+              </summary>
+              <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted p-2 text-[10px] whitespace-pre-wrap">
+                {JSON.stringify(status, null, 2)}
+              </pre>
+            </details>
+          </div>
+        )}
+      </div>
 
       <p className="mt-6 text-xs text-muted-foreground text-center leading-relaxed">
         Subscriptions auto-renew unless cancelled at least 24h before the period
