@@ -12,7 +12,6 @@ import {
   Save,
   Loader2,
   Search,
-  MapPin,
   ExternalLink,
   FileText,
   MessageSquare,
@@ -23,6 +22,9 @@ import {
   ChevronDown,
   ChevronUp,
   Briefcase,
+  Bookmark,
+  BookmarkCheck,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -31,6 +33,9 @@ import {
   searchJobs,
   tailorForJob,
   saveApplicationPack,
+  listShortlist,
+  addToShortlist,
+  removeFromShortlist,
   type JobHit,
 } from "@/lib/smart-apply.functions";
 
