@@ -93,6 +93,61 @@ async function getAccessToken(): Promise<string> {
   return json.access_token;
 }
 
+export async function checkGooglePlaySetup(): Promise<{
+  ok: boolean;
+  packageNameConfigured: boolean;
+  serviceAccountConfigured: boolean;
+  tokenExchangeOk: boolean;
+  packageAccessOk: boolean;
+  error?: string;
+}> {
+  const pkg = process.env.GOOGLE_PLAY_PACKAGE_NAME;
+  const serviceAccountConfigured = Boolean(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON);
+
+  const base = {
+    ok: false,
+    packageNameConfigured: Boolean(pkg),
+    serviceAccountConfigured,
+    tokenExchangeOk: false,
+    packageAccessOk: false,
+  };
+
+  if (!pkg || !serviceAccountConfigured) {
+    return { ...base, error: "Google Play backend settings are incomplete" };
+  }
+
+  try {
+    const token = await getAccessToken();
+    const resp = await fetch(
+      `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(pkg)}/inappproducts?maxResults=1`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.warn("[play-billing] setup check package access failed", resp.status, text);
+      return {
+        ...base,
+        tokenExchangeOk: true,
+        error:
+          resp.status === 401 || resp.status === 403
+            ? "Google Play API access is denied for this service account"
+            : `Google Play API package check failed (${resp.status})`,
+      };
+    }
+
+    return {
+      ...base,
+      ok: true,
+      tokenExchangeOk: true,
+      packageAccessOk: true,
+    };
+  } catch (e: any) {
+    console.warn("[play-billing] setup check failed", String(e?.message || e));
+    return { ...base, error: String(e?.message || e) };
+  }
+}
+
 export type GoogleSubscription = {
   kind: "subscription";
   expiryTimeMillis?: string;
@@ -185,6 +240,10 @@ export async function verifyAndApply(args: {
 
     return { ok: active, expiresAt };
   } catch (e: any) {
+    console.warn("[play-billing] verify failed", {
+      productId: args.productId,
+      error: String(e?.message || e),
+    });
     return { ok: false, error: String(e?.message || e) };
   }
 }
