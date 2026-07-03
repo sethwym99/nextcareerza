@@ -18,3 +18,10 @@ export const verifyPlayPurchase = createServerFn({ method: "POST" })
       purchaseToken: data.purchaseToken,
     });
   });
+
+export const checkPlayBillingSetup = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { checkGooglePlaySetup } = await import("./play-billing.server");
+    return checkGooglePlaySetup();
+  });
