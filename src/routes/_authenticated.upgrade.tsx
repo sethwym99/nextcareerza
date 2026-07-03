@@ -110,6 +110,9 @@ function AndroidUpgrade() {
   const [showDebug, setShowDebug] = useState(false);
   const [setupCheck, setSetupCheck] = useState<PlaySetupCheck | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
+
+  const refreshBillingStatus = () => setBillingStatus(getBillingStatus());
 
   useEffect(() => {
     (async () => {
@@ -130,10 +133,18 @@ function AndroidUpgrade() {
         console.error(e);
         toast.error("Could not load subscription options");
       } finally {
+        refreshBillingStatus();
         setLoading(false);
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!showDebug) return;
+    refreshBillingStatus();
+    const id = window.setInterval(refreshBillingStatus, 1000);
+    return () => window.clearInterval(id);
+  }, [showDebug]);
 
   const buy = async (productId: string) => {
     setBusy(productId);
@@ -145,6 +156,7 @@ function AndroidUpgrade() {
         toast.error(e?.message || "Purchase failed");
       }
     } finally {
+      refreshBillingStatus();
       setBusy(null);
     }
   };
@@ -157,11 +169,12 @@ function AndroidUpgrade() {
     } catch (e: any) {
       toast.error(e?.message || "Restore failed");
     } finally {
+      refreshBillingStatus();
       setBusy(null);
     }
   };
 
-  const status = getBillingStatus();
+  const status = billingStatus;
 
   return (
     <div className="min-h-[80vh] px-4 py-8 max-w-md mx-auto">
