@@ -528,3 +528,65 @@ function fmt(n: number, currency: string) {
     return `${currency} ${Math.round(n).toLocaleString()}`;
   }
 }
+
+function JobCard({
+  job,
+  active,
+  shortlisted,
+  onPick,
+  onToggleShortlist,
+}: {
+  job: JobHit;
+  active: boolean;
+  shortlisted: boolean;
+  onPick: () => void;
+  onToggleShortlist: () => void;
+}) {
+  return (
+    <div
+      className={`w-full text-left glass-card rounded-2xl p-4 transition border ${
+        active ? "border-primary-glow/70" : "border-transparent hover:border-border"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <button onClick={onPick} className="min-w-0 text-left flex-1">
+          <div className="font-semibold truncate">{job.title}</div>
+          <div className="text-xs text-muted-foreground truncate">
+            {job.company} {job.location && `· ${job.location}`}
+          </div>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleShortlist();
+          }}
+          className="shrink-0 p-1 rounded-md hover:bg-secondary/60"
+          title={shortlisted ? "Remove from shortlist" : "Add to shortlist"}
+        >
+          {shortlisted ? (
+            <BookmarkCheck className="h-4 w-4 text-primary-glow" />
+          ) : (
+            <Bookmark className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
+      </div>
+      {job.snippet && (
+        <button onClick={onPick} className="block text-left w-full">
+          <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{job.snippet}</p>
+        </button>
+      )}
+      <div className="flex items-center justify-between mt-2">
+        <a
+          href={job.url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[11px] text-primary-glow inline-flex items-center gap-1"
+        >
+          <ExternalLink className="h-3 w-3" /> Open posting
+        </a>
+        {job.source && <span className="text-[10px] text-muted-foreground">{job.source}</span>}
+      </div>
+    </div>
+  );
+}
+
