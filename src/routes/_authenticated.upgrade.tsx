@@ -133,7 +133,7 @@ function AndroidUpgrade() {
         setLoading(false);
       }
     })();
-  }, [checkSetup]);
+  }, []);
 
   const buy = async (productId: string) => {
     setBusy(productId);
