@@ -133,7 +133,9 @@ async function doInitBilling(): Promise<void> {
   const CdvPurchase = await getStore();
   const store = CdvPurchase.store;
   storeRef = store;
-  store.verbosity = import.meta.env.DEV ? CdvPurchase.LogLevel.DEBUG : CdvPurchase.LogLevel.WARNING;
+  store.verbosity = import.meta.env.DEV
+    ? (CdvPurchase.LogLevel?.DEBUG ?? 4)
+    : (CdvPurchase.LogLevel?.WARNING ?? 2);
 
   // Register products
   store.register([
@@ -176,7 +178,7 @@ async function doInitBilling(): Promise<void> {
           data: {
             id: productId,
             latest_receipt: true,
-            transaction: receipt.transaction ?? receipt.transactions?.[0] ?? {},
+            transaction: { type: "android-playstore", purchaseToken },
           },
         });
       } else {
