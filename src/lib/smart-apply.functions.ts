@@ -150,6 +150,29 @@ const packSchema = z.object({
   }),
 });
 
+async function fetchJobDescription(url: string): Promise<string> {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey || !url) return "";
+  try {
+    const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url,
+        formats: ["markdown"],
+        onlyMainContent: true,
+        timeout: 20000,
+      }),
+    });
+    if (!res.ok) return "";
+    const json: any = await res.json().catch(() => ({}));
+    const md: string = json?.data?.markdown ?? json?.markdown ?? "";
+    return md.slice(0, 12000);
+  } catch {
+    return "";
+  }
+}
+
 export const tailorForJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -158,7 +181,7 @@ export const tailorForJob = createServerFn({ method: "POST" })
         jobTitle: z.string().min(2),
         company: z.string().min(1),
         location: z.string().default(""),
-        jobSnippet: z.string().min(20),
+        jobSnippet: z.string().default(""),
         jobUrl: z.string().url().optional(),
         cvText: z.string().min(20),
       })
@@ -168,18 +191,29 @@ export const tailorForJob = createServerFn({ method: "POST" })
     await enforcePremium(context.supabase, context.userId);
     const gateway = getGateway();
 
+    const fullDesc = data.jobUrl ? await fetchJobDescription(data.jobUrl) : "";
+    const jobBody = (fullDesc || data.jobSnippet || `${data.jobTitle} at ${data.company}`).slice(0, 12000);
+
     let pack: z.infer<typeof packSchema>;
     try {
       const { object } = await generateObject({
         model: gateway(MODEL),
         schema: packSchema,
+        maxRetries: 2,
         system:
-          "You are a senior career coach. Tailor the candidate's CV to the job (ATS-friendly, ~400-600 words with sections Summary, Experience, Skills, Education). Write a strong, specific 250-320 word cover letter addressed to the company. Give an honest matchScore (0-100), matched & missing skills, and a realistic salary range based on role, location, and seniority.",
-        prompt: `JOB:\nCompany: ${data.company}\nRole: ${data.jobTitle}\nLocation: ${data.location}\n\nDescription / posting snippet:\n${data.jobSnippet}\n\nCANDIDATE CV:\n${data.cvText.slice(0, 12000)}`,
+          "You are a senior career coach. Tailor the candidate's CV to the job (ATS-friendly, ~400-600 words with sections Summary, Experience, Skills, Education). Write a strong, specific 250-320 word cover letter addressed to the company. Give an honest matchScore (0-100), matched & missing skills, and a realistic salary range based on role, location, and seniority. Always fill every field of the schema — never leave arrays or strings blank; if unsure, infer sensibly.",
+        prompt: `JOB:\nCompany: ${data.company}\nRole: ${data.jobTitle}\nLocation: ${data.location}\n\nJob description:\n${jobBody}\n\nCANDIDATE CV:\n${data.cvText.slice(0, 12000)}`,
       });
       pack = object;
-    } catch (e) {
+    } catch (e: any) {
       console.error("[smart-apply] pack generation failed", e);
+      const msg = String(e?.message ?? "");
+      if (msg.includes("402") || msg.toLowerCase().includes("credit")) {
+        throw new Error("AI credits exhausted. Please try again later.");
+      }
+      if (msg.includes("429")) {
+        throw new Error("Rate limited. Wait a few seconds and try again.");
+      }
       throw new Error("Couldn't tailor for this job. Try another one or shorten your CV.");
     }
 
@@ -200,6 +234,64 @@ export const tailorForJob = createServerFn({ method: "POST" })
       },
       ...pack,
     };
+  });
+
+// ---------- Shortlist ----------
+export const listShortlist = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("shortlisted_jobs")
+      .select("*")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false });
+    return { jobs: (data ?? []) as any[] };
+  });
+
+export const addToShortlist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        jobUrl: z.string().url(),
+        title: z.string().min(1),
+        company: z.string().min(1),
+        location: z.string().default(""),
+        snippet: z.string().default(""),
+        source: z.string().default(""),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("shortlisted_jobs")
+      .upsert(
+        {
+          user_id: context.userId,
+          job_url: data.jobUrl,
+          title: data.title,
+          company: data.company,
+          location: data.location,
+          snippet: data.snippet,
+          source: data.source,
+        } as any,
+        { onConflict: "user_id,job_url" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removeFromShortlist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ jobUrl: z.string().url() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("shortlisted_jobs")
+      .delete()
+      .eq("user_id", context.userId)
+      .eq("job_url", data.jobUrl);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // ---------- Persist pack to tracker ----------

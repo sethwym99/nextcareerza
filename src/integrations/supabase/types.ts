@@ -391,6 +391,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shortlisted_jobs: {
+        Row: {
+          company: string
+          created_at: string
+          id: string
+          job_url: string
+          location: string | null
+          snippet: string | null
+          source: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          id?: string
+          job_url: string
+          location?: string | null
+          snippet?: string | null
+          source?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          id?: string
+          job_url?: string
+          location?: string | null
+          snippet?: string | null
+          source?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
