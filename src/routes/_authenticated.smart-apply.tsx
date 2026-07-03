@@ -53,20 +53,56 @@ function Page() {
   const runSearch = useServerFn(searchJobs);
   const runTailor = useServerFn(tailorForJob);
   const savePack = useServerFn(saveApplicationPack);
+  const runListShortlist = useServerFn(listShortlist);
+  const runAddShortlist = useServerFn(addToShortlist);
+  const runRemoveShortlist = useServerFn(removeFromShortlist);
 
   const { data: cvData } = useQuery({
     queryKey: ["base-cv"],
     queryFn: () => getCv({ data: undefined as any }),
   });
 
+  const { data: shortlistData } = useQuery({
+    queryKey: ["shortlist"],
+    queryFn: () => runListShortlist({ data: undefined as any }),
+  });
+  const shortlistUrls = new Set((shortlistData?.jobs ?? []).map((j: any) => j.job_url));
+
   const [cvText, setCvText] = useState("");
   const [cvOpen, setCvOpen] = useState(false);
+  const [tab, setTab] = useState<"search" | "shortlist">("search");
   const [role, setRole] = useState("");
   const [location, setLocation] = useState("");
   const [seniority, setSeniority] = useState("");
   const [jobs, setJobs] = useState<JobHit[] | null>(null);
   const [selected, setSelected] = useState<JobHit | null>(null);
   const [result, setResult] = useState<TailorResult | null>(null);
+
+  const shortlistMut = useMutation({
+    mutationFn: async (job: JobHit) => {
+      if (shortlistUrls.has(job.url)) {
+        await runRemoveShortlist({ data: { jobUrl: job.url } });
+        return "removed" as const;
+      }
+      await runAddShortlist({
+        data: {
+          jobUrl: job.url,
+          title: job.title,
+          company: job.company,
+          location: job.location || "",
+          snippet: job.snippet || "",
+          source: job.source || "",
+        },
+      });
+      return "added" as const;
+    },
+    onSuccess: (kind) => {
+      qc.invalidateQueries({ queryKey: ["shortlist"] });
+      toast.success(kind === "added" ? "Added to shortlist" : "Removed from shortlist");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed"),
+  });
+
 
   useEffect(() => {
     if (cvData?.baseCv && !cvText) setCvText(cvData.baseCv);
