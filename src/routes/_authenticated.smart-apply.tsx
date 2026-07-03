@@ -242,88 +242,106 @@ function Page() {
         )}
       </div>
 
-      {/* Search bar */}
-      <div className="glass-card rounded-2xl p-4 grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2">
-        <Input
-          placeholder="Role (e.g. Frontend Developer)"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
-        />
-        <Input
-          placeholder="Location (optional)"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
-        />
-        <Input
-          placeholder="Seniority"
-          value={seniority}
-          onChange={(e) => setSeniority(e.target.value)}
-          className="sm:w-32"
-        />
-        <Button
-          variant="hero"
-          onClick={() => searchMut.mutate()}
-          disabled={!canSearch}
+      {/* Tabs: Search / Shortlist */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setTab("search")}
+          className={`text-xs px-3 py-1.5 rounded-full border ${tab === "search" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
         >
-          {searchMut.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4" />
-          )}
-          Search
-        </Button>
+          <Search className="h-3 w-3 inline mr-1" /> Search
+        </button>
+        <button
+          onClick={() => setTab("shortlist")}
+          className={`text-xs px-3 py-1.5 rounded-full border ${tab === "shortlist" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
+        >
+          <Bookmark className="h-3 w-3 inline mr-1" /> Shortlist ({shortlistData?.jobs?.length ?? 0})
+        </button>
       </div>
 
+      {/* Search bar */}
+      {tab === "search" && (
+        <div className="glass-card rounded-2xl p-4 grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2">
+          <Input
+            placeholder="Role (e.g. Frontend Developer)"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
+          />
+          <Input
+            placeholder="Location (optional)"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
+          />
+          <Input
+            placeholder="Seniority"
+            value={seniority}
+            onChange={(e) => setSeniority(e.target.value)}
+            className="sm:w-32"
+          />
+          <Button variant="hero" onClick={() => searchMut.mutate()} disabled={!canSearch}>
+            {searchMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            Search
+          </Button>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-[minmax(0,420px)_1fr] gap-4">
-        {/* Results list */}
+        {/* Results / Shortlist list */}
         <div className="space-y-2">
-          {!jobs && (
+          {tab === "search" && !jobs && (
             <div className="glass-card rounded-2xl p-6 text-sm text-muted-foreground text-center">
               <Briefcase className="h-8 w-8 mx-auto mb-2 opacity-50" />
               Search above to see live job listings.
             </div>
           )}
-          {jobs && jobs.length === 0 && (
+          {tab === "search" && jobs && jobs.length === 0 && (
             <div className="glass-card rounded-2xl p-6 text-sm text-muted-foreground text-center">
               No jobs found for that query.
             </div>
           )}
-          {jobs?.map((j) => (
-            <button
-              key={j.id}
-              onClick={() => pick(j)}
-              className={`w-full text-left glass-card rounded-2xl p-4 transition border ${
-                selected?.id === j.id
-                  ? "border-primary-glow/70"
-                  : "border-transparent hover:border-border"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{j.title}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {j.company} {j.location && `· ${j.location}`}
-                  </div>
-                </div>
-                <span className="text-[10px] text-muted-foreground shrink-0">{j.source}</span>
-              </div>
-              {j.snippet && (
-                <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{j.snippet}</p>
-              )}
-              <a
-                href={j.url}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-[11px] text-primary-glow inline-flex items-center gap-1 mt-2"
-              >
-                <ExternalLink className="h-3 w-3" /> Open posting
-              </a>
-            </button>
-          ))}
+          {tab === "search" &&
+            jobs?.map((j) => (
+              <JobCard
+                key={j.id}
+                job={j}
+                active={selected?.id === j.id}
+                shortlisted={shortlistUrls.has(j.url)}
+                onPick={() => pick(j)}
+                onToggleShortlist={() => shortlistMut.mutate(j)}
+              />
+            ))}
+
+          {tab === "shortlist" && (shortlistData?.jobs?.length ?? 0) === 0 && (
+            <div className="glass-card rounded-2xl p-6 text-sm text-muted-foreground text-center">
+              <Bookmark className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              Save jobs from Search to build your shortlist.
+            </div>
+          )}
+          {tab === "shortlist" &&
+            (shortlistData?.jobs ?? []).map((s: any) => {
+              const j: JobHit = {
+                id: s.id,
+                title: s.title,
+                company: s.company,
+                location: s.location ?? "",
+                url: s.job_url,
+                snippet: s.snippet ?? "",
+                source: s.source ?? "",
+              };
+              return (
+                <JobCard
+                  key={s.id}
+                  job={j}
+                  active={selected?.url === j.url}
+                  shortlisted
+                  onPick={() => pick(j)}
+                  onToggleShortlist={() => shortlistMut.mutate(j)}
+                />
+              );
+            })}
         </div>
+
 
         {/* Tailor pane */}
         <div className="space-y-3">
