@@ -1,5 +1,15 @@
-## Plan
+## Rotate `GOOGLE_PLAY_RTDN_TOKEN` and show the value
 
-New key id `9f7b5b617ba6…` with a different private key — this is a real rotation. I'll overwrite the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` backend secret with the contents of the new file using `set_secret` (it replaces the stored value in place). No code changes needed.
+The secret already exists but its value can't be read back. To give you a fresh token you can paste into the Pub/Sub push endpoint URL, I'll rotate it.
 
-After that, please **delete the old key** `c84bd3f3d7ed…` in Google Cloud Console → Service Accounts → Keys, so the leaked credential is fully invalidated.
+### Steps
+1. Delete the current `GOOGLE_PLAY_RTDN_TOKEN` secret (`delete_secret`).
+2. Mint a new 48-char random value and store it (`generate_secret`, length 48).
+3. Display the new value to you **once** in chat so you can paste it into the Pub/Sub push subscription endpoint:
+   ```
+   https://nextcareer.one/api/public/play-rtdn?token=<NEW_TOKEN>
+   ```
+4. Remind you to update any existing Pub/Sub push subscription with the new URL (the old token stops working the moment it's rotated).
+
+### No code changes
+The webhook route (`src/routes/api/public/play-rtdn.ts`) already reads `process.env.GOOGLE_PLAY_RTDN_TOKEN`, so nothing in the app needs to change.
