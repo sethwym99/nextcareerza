@@ -34,9 +34,11 @@ const RECEIVER = "35985205";
 type PlaySetupCheck = {
   ok: boolean;
   packageNameConfigured: boolean;
+  packageNameMatchesApp: boolean;
   serviceAccountConfigured: boolean;
   tokenExchangeOk: boolean;
   packageAccessOk: boolean;
+  expectedPackageName: string;
   error?: string;
 };
 
@@ -294,10 +296,16 @@ function AndroidUpgrade() {
             {setupCheck && (
               <div className="grid grid-cols-2 gap-2 pt-1 text-muted-foreground">
                 <span>Package</span><span className="font-mono text-right">{setupCheck.packageNameConfigured ? "set" : "missing"}</span>
+                <span>Package match</span><span className="font-mono text-right">{setupCheck.packageNameMatchesApp ? "ok" : "not ok"}</span>
                 <span>Service account</span><span className="font-mono text-right">{setupCheck.serviceAccountConfigured ? "set" : "missing"}</span>
                 <span>Token exchange</span><span className="font-mono text-right">{setupCheck.tokenExchangeOk ? "ok" : "not ok"}</span>
                 <span>Package access</span><span className="font-mono text-right">{setupCheck.packageAccessOk ? "ok" : "not ok"}</span>
               </div>
+            )}
+            {setupCheck && !setupCheck.packageNameMatchesApp && (
+              <p className="text-destructive leading-relaxed">
+                Expected package: <code>{setupCheck.expectedPackageName}</code>
+              </p>
             )}
             {setupError && <p className="text-destructive leading-relaxed">{setupError}</p>}
             <details className="pt-2">
