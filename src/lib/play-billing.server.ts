@@ -6,6 +6,7 @@
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/androidpublisher";
+const EXPECTED_ANDROID_PACKAGE = "com.smforge.nextcareer";
 
 type ServiceAccount = {
   client_email: string;
@@ -46,7 +47,15 @@ async function getAccessToken(): Promise<string> {
   }
   const raw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
   if (!raw) throw new Error("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON not configured");
-  const sa = JSON.parse(raw) as ServiceAccount;
+  let sa: ServiceAccount;
+  try {
+    sa = JSON.parse(raw) as ServiceAccount;
+  } catch {
+    throw new Error("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not valid JSON");
+  }
+  if (!sa.client_email || !sa.private_key) {
+    throw new Error("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is missing client_email or private_key");
+  }
 
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
@@ -96,24 +105,37 @@ async function getAccessToken(): Promise<string> {
 export async function checkGooglePlaySetup(): Promise<{
   ok: boolean;
   packageNameConfigured: boolean;
+  packageNameMatchesApp: boolean;
   serviceAccountConfigured: boolean;
   tokenExchangeOk: boolean;
   packageAccessOk: boolean;
+  expectedPackageName: string;
   error?: string;
 }> {
   const pkg = process.env.GOOGLE_PLAY_PACKAGE_NAME;
   const serviceAccountConfigured = Boolean(process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON);
+  const packageNameConfigured = Boolean(pkg);
+  const packageNameMatchesApp = pkg === EXPECTED_ANDROID_PACKAGE;
 
   const base = {
     ok: false,
-    packageNameConfigured: Boolean(pkg),
+    packageNameConfigured,
+    packageNameMatchesApp,
     serviceAccountConfigured,
     tokenExchangeOk: false,
     packageAccessOk: false,
+    expectedPackageName: EXPECTED_ANDROID_PACKAGE,
   };
 
   if (!pkg || !serviceAccountConfigured) {
     return { ...base, error: "Google Play backend settings are incomplete" };
+  }
+
+  if (!packageNameMatchesApp) {
+    return {
+      ...base,
+      error: `Google Play package mismatch. Backend must use ${EXPECTED_ANDROID_PACKAGE}.`,
+    };
   }
 
   try {
@@ -126,12 +148,16 @@ export async function checkGooglePlaySetup(): Promise<{
     if (!resp.ok) {
       const text = await resp.text();
       console.warn("[play-billing] setup check package access failed", resp.status, text);
+      const denied = resp.status === 401 || resp.status === 403;
+      const missingPackage = resp.status === 404;
       return {
         ...base,
         tokenExchangeOk: true,
         error:
-          resp.status === 401 || resp.status === 403
-            ? "Google Play API access is denied for this service account"
+          denied
+            ? "Google Play API access is denied. Confirm the service account is added to this exact app in Google Play with app access and order/subscription permissions, then wait for permission propagation."
+            : missingPackage
+              ? `Google Play cannot find package ${EXPECTED_ANDROID_PACKAGE} for this service account. Confirm the package name and app access in Google Play.`
             : `Google Play API package check failed (${resp.status})`,
       };
     }
