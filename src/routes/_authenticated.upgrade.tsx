@@ -204,8 +204,24 @@ function AndroidUpgrade() {
               Backend check: {setupError}
             </p>
           )}
+          {setupCheck?.tokenExchangeOk && !setupCheck.packageAccessOk && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs leading-relaxed text-destructive">
+              The service account JSON is valid, but Google Play has not granted
+              it access to this app yet. No Codemagic rebuild is needed for this;
+              fix the app permissions in Google Play Console, then wait for them
+              to propagate.
+            </div>
+          )}
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
             <li>Install the app from the Google Play internal testing opt-in link, not a side-loaded APK.</li>
+            <li>
+              In Google Play Console, make sure the service account has access to
+              app package <code>com.smforge.nextcareer</code>.
+            </li>
+            <li>
+              Give that service account permissions for app access plus orders
+              and subscriptions, then wait for Google Play permission propagation.
+            </li>
             <li>
               Confirm these exact products are active in Google Play:
               <ul className="mt-1 ml-4 list-disc space-y-1">
