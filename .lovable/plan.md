@@ -1,39 +1,29 @@
+## What the screenshot means
+
+The app is reaching your backend, but Google Play is still denying the service account access to the exact Android package. This usually does not require a Codemagic rebuild. It is almost always one of these:
+
+1. The backend secret `GOOGLE_PLAY_PACKAGE_NAME` is not exactly `com.smforge.nextcareer`.
+2. The service account was added in Google Play Console, but not granted access to this specific app.
+3. The service account has app access but is missing Monetization / order / subscription permissions.
+4. Google Play permission propagation has not completed yet.
+5. The app was installed from a sideloaded APK instead of the internal testing Play Store link.
+
 ## Plan
 
-1. **Confirm the exact failing backend check**
-   - Use the Android Upgrade debug panel to identify whether the failure is only `Package access` or also `Token exchange`.
-   - If `Token exchange` is OK but `Package access` is denied, the backend credential is valid but not authorized for this app/package in Google Play.
-
-2. **Verify backend configuration values**
-   - Check that `GOOGLE_PLAY_PACKAGE_NAME` matches the Android package exactly.
-   - Check that `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is present and belongs to the same service account you added in Google Play permissions.
-   - Do not expose or print the private key.
-
-3. **Improve backend diagnostics if needed**
-   - Update the Google Play setup check to return a safer, clearer error message that distinguishes:
-     - missing backend settings
-     - token exchange failure
-     - package name mismatch
-     - service account permission/access denial
-   - Keep sensitive Google error bodies server-side only.
-
-4. **Validate the Google Play API call path**
-   - Confirm the setup check calls the Android Publisher API using OAuth2 service-account access tokens, not a simple API key.
-   - Confirm it checks the configured package via `/androidpublisher/v3/applications/{package}/inappproducts`.
-
-5. **If permissions were just added, account for propagation**
-   - Google Play permissions can take time to propagate.
-   - After waiting, re-open the Android app, go to Upgrade, tap **Show debug info**, and confirm:
-     - Package: set
-     - Service account: set
-     - Token exchange: ok
-     - Package access: ok
-
-6. **If package access still fails**
-   - Re-check the Play Console service-account user permissions for the exact app.
-   - Ensure the service account has app-level access, plus permissions needed for subscriptions/orders.
-   - Confirm the app has at least one active internal testing release and the package name matches the built app.
+1. Check the Lovable Cloud backend status first so we know the backend is healthy before debugging permissions.
+2. Verify the configured runtime secrets are present without exposing their values:
+   - `GOOGLE_PLAY_PACKAGE_NAME`
+   - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
+3. Re-run the existing backend setup check and inspect which exact flag is failing:
+   - package configured
+   - package matches app
+   - service account configured
+   - token exchange
+   - package access
+4. If the secrets are correct and only package access fails, no code change is needed. I’ll give you the exact Google Play Console checklist to fix it.
+5. If the package-name secret is wrong or missing, I’ll update the backend configuration path so the app clearly reports that instead of only showing “API access denied.”
+6. Optionally improve the in-app debug message so it shows “token works, package access denied” separately, making this easier to confirm from your phone.
 
 ## Technical details
 
-The current backend already uses the correct mechanism: a service-account JSON is used to mint an OAuth2 JWT bearer access token, then it calls the Google Play Developer API. The error `Google Play API access is denied for this service account` usually means token generation succeeded, but Google Play rejected access to the configured package. That points to Play Console permissions, package-name mismatch, or propagation delay rather than a frontend purchase issue.
+The code already checks package access by calling Google Play’s Android Publisher API for package `com.smforge.nextcareer`. A token exchange success means the JSON key is valid. A 401/403 during the package check means Google Play does not allow that service account to access this app/package yet.
