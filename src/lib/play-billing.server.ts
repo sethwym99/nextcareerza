@@ -12,7 +12,66 @@ type ServiceAccount = {
   client_email: string;
   private_key: string;
   token_uri?: string;
+  project_id?: string;
 };
+
+export type PlayServiceAccountInfo = {
+  clientEmail: string | null;
+  projectId: string | null;
+  privateKeyPresent: boolean;
+  privateKeyFingerprint: string | null;
+  error?: string;
+};
+
+export function getPlayServiceAccountInfo(): PlayServiceAccountInfo {
+  const raw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
+  if (!raw) {
+    return {
+      clientEmail: null,
+      projectId: null,
+      privateKeyPresent: false,
+      privateKeyFingerprint: null,
+      error: "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON not configured",
+    };
+  }
+  try {
+    const sa = JSON.parse(raw) as Partial<ServiceAccount>;
+    const clientEmail = sa.client_email ?? null;
+    const projectId = sa.project_id ?? null;
+    const pk = sa.private_key;
+    const privateKeyPresent =
+      typeof pk === "string" &&
+      pk.includes("-----BEGIN PRIVATE KEY-----") &&
+      pk.includes("-----END PRIVATE KEY-----");
+
+    let privateKeyFingerprint: string | null = null;
+    if (privateKeyPresent && typeof pk === "string") {
+      const compact = pk
+        .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+        .replace(/-----END PRIVATE KEY-----/g, "")
+        .replace(/\s+/g, "");
+      privateKeyFingerprint =
+        compact.length > 16
+          ? `${compact.slice(0, 8)}…${compact.slice(-8)} (${pk.length} chars)`
+          : "present (unexpected length)";
+    }
+
+    return {
+      clientEmail,
+      projectId,
+      privateKeyPresent,
+      privateKeyFingerprint,
+    };
+  } catch {
+    return {
+      clientEmail: null,
+      projectId: null,
+      privateKeyPresent: false,
+      privateKeyFingerprint: null,
+      error: "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not valid JSON",
+    };
+  }
+}
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
@@ -153,11 +212,10 @@ export async function checkGooglePlaySetup(): Promise<{
       return {
         ...base,
         tokenExchangeOk: true,
-        error:
-          denied
-            ? "Google Play token exchange succeeded, but app/package access is denied. In Google Play Console, grant this service account access to com.smforge.nextcareer with app access plus order/subscription permissions, then wait for permission propagation."
-            : missingPackage
-              ? `Google Play cannot find package ${EXPECTED_ANDROID_PACKAGE} for this service account. Confirm the package name and app access in Google Play.`
+        error: denied
+          ? "Google Play token exchange succeeded, but app/package access is denied. In Google Play Console, grant this service account access to com.smforge.nextcareer with app access plus order/subscription permissions, then wait for permission propagation."
+          : missingPackage
+            ? `Google Play cannot find package ${EXPECTED_ANDROID_PACKAGE} for this service account. Confirm the package name and app access in Google Play.`
             : `Google Play API package check failed (${resp.status})`,
       };
     }
@@ -238,8 +296,7 @@ export async function verifyAndApply(args: {
       raw = await getSubscriptionV2(args.purchaseToken);
       const state = raw?.subscriptionState as string | undefined;
       active =
-        state === "SUBSCRIPTION_STATE_ACTIVE" ||
-        state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
+        state === "SUBSCRIPTION_STATE_ACTIVE" || state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
       const line = raw?.lineItems?.[0];
       expiresAt = line?.expiryTime ?? null;
     }

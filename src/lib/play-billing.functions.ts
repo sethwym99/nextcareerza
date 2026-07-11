@@ -25,3 +25,10 @@ export const checkPlayBillingSetup = createServerFn({ method: "GET" })
     const { checkGooglePlaySetup } = await import("./play-billing.server");
     return checkGooglePlaySetup();
   });
+
+export const getPlayServiceAccountInfo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { getPlayServiceAccountInfo } = await import("./play-billing.server");
+    return getPlayServiceAccountInfo();
+  });

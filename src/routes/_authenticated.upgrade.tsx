@@ -1,14 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import {
-  Loader2,
-  Sparkles,
-  RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  Bug,
-} from "lucide-react";
+import { Loader2, Sparkles, RotateCcw, ChevronDown, ChevronUp, Bug } from "lucide-react";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import {
   initBilling,
@@ -19,7 +12,7 @@ import {
   PRODUCT_IDS,
   type PlayProduct,
 } from "@/lib/play-billing";
-import { checkPlayBillingSetup } from "@/lib/play-billing.functions";
+import { checkPlayBillingSetup, getPlayServiceAccountInfo } from "@/lib/play-billing.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -42,6 +35,14 @@ type PlaySetupCheck = {
   error?: string;
 };
 
+type ServiceAccountInfo = {
+  clientEmail: string | null;
+  projectId: string | null;
+  privateKeyPresent: boolean;
+  privateKeyFingerprint: string | null;
+  error?: string;
+};
+
 function Upgrade() {
   if (isNativeApp()) {
     if (nativePlatform() === "android") return <AndroidUpgrade />;
@@ -61,9 +62,7 @@ function WebUpgrade() {
       <div className="glass-card rounded-2xl p-8 text-center max-w-md">
         <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-primary" />
         <h1 className="text-xl font-semibold">Redirecting to PayFast…</h1>
-        <p className="text-sm text-muted-foreground mt-2">
-          Setting up your R99/mo subscription.
-        </p>
+        <p className="text-sm text-muted-foreground mt-2">Setting up your R99/mo subscription.</p>
 
         <form
           ref={formRef}
@@ -96,8 +95,8 @@ function IosComingSoon() {
         <Sparkles className="h-6 w-6 mx-auto mb-3 text-primary" />
         <h1 className="text-xl font-semibold">Coming soon on iOS</h1>
         <p className="text-sm text-muted-foreground mt-2">
-          In-app subscriptions on iOS are not enabled yet. Please use the web
-          version to upgrade for now.
+          In-app subscriptions on iOS are not enabled yet. Please use the web version to upgrade for
+          now.
         </p>
       </div>
     </div>
@@ -106,12 +105,14 @@ function IosComingSoon() {
 
 function AndroidUpgrade() {
   const checkSetup = useServerFn(checkPlayBillingSetup);
+  const getServiceAccount = useServerFn(getPlayServiceAccountInfo);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<PlayProduct[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [setupCheck, setSetupCheck] = useState<PlaySetupCheck | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [serviceAccountInfo, setServiceAccountInfo] = useState<ServiceAccountInfo | null>(null);
   const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
 
   const refreshBillingStatus = () => setBillingStatus(getBillingStatus());
@@ -147,6 +148,24 @@ function AndroidUpgrade() {
     const id = window.setInterval(refreshBillingStatus, 1000);
     return () => window.clearInterval(id);
   }, [showDebug]);
+
+  useEffect(() => {
+    if (!showDebug || serviceAccountInfo) return;
+    (async () => {
+      try {
+        const info = await getServiceAccount();
+        setServiceAccountInfo(info as ServiceAccountInfo);
+      } catch (e: any) {
+        setServiceAccountInfo({
+          clientEmail: null,
+          projectId: null,
+          privateKeyPresent: false,
+          privateKeyFingerprint: null,
+          error: e?.message || "Could not load service account info",
+        });
+      }
+    })();
+  }, [showDebug, serviceAccountInfo, getServiceAccount]);
 
   const buy = async (productId: string) => {
     setBusy(productId);
@@ -200,38 +219,49 @@ function AndroidUpgrade() {
             Google Play products are not available on this install.
           </p>
           {setupError && (
-            <p className="text-destructive text-xs leading-relaxed">
-              Backend check: {setupError}
-            </p>
+            <p className="text-destructive text-xs leading-relaxed">Backend check: {setupError}</p>
           )}
           {setupCheck?.tokenExchangeOk && !setupCheck.packageAccessOk && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs leading-relaxed text-destructive">
-              The service account JSON is valid, but Google Play has not granted
-              it access to this app yet. No Codemagic rebuild is needed for this;
-              fix the app permissions in Google Play Console, then wait for them
-              to propagate.
+              The service account JSON is valid, but Google Play has not granted it access to this
+              app yet. No Codemagic rebuild is needed for this; fix the app permissions in Google
+              Play Console, then wait for them to propagate.
             </div>
           )}
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
-            <li>Install the app from the Google Play internal testing opt-in link, not a side-loaded APK.</li>
             <li>
-              In Google Play Console, make sure the service account has access to
-              app package <code>com.smforge.nextcareer</code>.
+              Install the app from the Google Play internal testing opt-in link, not a side-loaded
+              APK.
             </li>
             <li>
-              Give that service account permissions for app access plus orders
-              and subscriptions, then wait for Google Play permission propagation.
+              In Google Play Console, make sure the service account has access to app package{" "}
+              <code>com.smforge.nextcareer</code>.
+            </li>
+            <li>
+              Give that service account permissions for app access plus orders and subscriptions,
+              then wait for Google Play permission propagation.
             </li>
             <li>
               Confirm these exact products are active in Google Play:
               <ul className="mt-1 ml-4 list-disc space-y-1">
-                <li><code>{PRODUCT_IDS.monthly}</code></li>
-                <li><code>{PRODUCT_IDS.yearly}</code></li>
-                <li><code>{PRODUCT_IDS.lifetime}</code></li>
+                <li>
+                  <code>{PRODUCT_IDS.monthly}</code>
+                </li>
+                <li>
+                  <code>{PRODUCT_IDS.yearly}</code>
+                </li>
+                <li>
+                  <code>{PRODUCT_IDS.lifetime}</code>
+                </li>
               </ul>
             </li>
-            <li>Make sure your tester Google account accepted the test invite and can see this app in Play Store.</li>
-            <li>Open the debug details below and check product count, loaded IDs, and last error.</li>
+            <li>
+              Make sure your tester Google account accepted the test invite and can see this app in
+              Play Store.
+            </li>
+            <li>
+              Open the debug details below and check product count, loaded IDs, and last error.
+            </li>
           </ol>
         </div>
       ) : (
@@ -311,11 +341,26 @@ function AndroidUpgrade() {
             </div>
             {setupCheck && (
               <div className="grid grid-cols-2 gap-2 pt-1 text-muted-foreground">
-                <span>Package</span><span className="font-mono text-right">{setupCheck.packageNameConfigured ? "set" : "missing"}</span>
-                <span>Package match</span><span className="font-mono text-right">{setupCheck.packageNameMatchesApp ? "ok" : "not ok"}</span>
-                <span>Service account</span><span className="font-mono text-right">{setupCheck.serviceAccountConfigured ? "set" : "missing"}</span>
-                <span>Token exchange</span><span className="font-mono text-right">{setupCheck.tokenExchangeOk ? "ok" : "not ok"}</span>
-                <span>Package access</span><span className="font-mono text-right">{setupCheck.packageAccessOk ? "ok" : "not ok"}</span>
+                <span>Package</span>
+                <span className="font-mono text-right">
+                  {setupCheck.packageNameConfigured ? "set" : "missing"}
+                </span>
+                <span>Package match</span>
+                <span className="font-mono text-right">
+                  {setupCheck.packageNameMatchesApp ? "ok" : "not ok"}
+                </span>
+                <span>Service account</span>
+                <span className="font-mono text-right">
+                  {setupCheck.serviceAccountConfigured ? "set" : "missing"}
+                </span>
+                <span>Token exchange</span>
+                <span className="font-mono text-right">
+                  {setupCheck.tokenExchangeOk ? "ok" : "not ok"}
+                </span>
+                <span>Package access</span>
+                <span className="font-mono text-right">
+                  {setupCheck.packageAccessOk ? "ok" : "not ok"}
+                </span>
               </div>
             )}
             {setupCheck && !setupCheck.packageNameMatchesApp && (
@@ -324,6 +369,50 @@ function AndroidUpgrade() {
               </p>
             )}
             {setupError && <p className="text-destructive leading-relaxed">{setupError}</p>}
+
+            <div className="pt-2 border-t border-border/40 space-y-2">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Service account email</span>
+                <span className="font-mono text-right">
+                  {serviceAccountInfo
+                    ? (serviceAccountInfo.clientEmail ?? (
+                        <span className="text-destructive">not set</span>
+                      ))
+                    : "Loading…"}
+                </span>
+              </div>
+              {serviceAccountInfo?.projectId && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">GCP project</span>
+                  <span className="font-mono text-right">{serviceAccountInfo.projectId}</span>
+                </div>
+              )}
+              {serviceAccountInfo && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Private key</span>
+                  <span className="font-mono text-right">
+                    {serviceAccountInfo.privateKeyPresent ? "present" : "missing"}
+                  </span>
+                </div>
+              )}
+              {serviceAccountInfo?.privateKeyFingerprint && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Key fingerprint</span>
+                  <span className="font-mono text-right">
+                    {serviceAccountInfo.privateKeyFingerprint}
+                  </span>
+                </div>
+              )}
+              {serviceAccountInfo?.error && (
+                <p className="text-destructive leading-relaxed">{serviceAccountInfo.error}</p>
+              )}
+              {serviceAccountInfo?.clientEmail && (
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Compare this email with the account invited in Google Play Console → Users and
+                  permissions.
+                </p>
+              )}
+            </div>
             <details className="pt-2">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                 Billing details
@@ -337,8 +426,8 @@ function AndroidUpgrade() {
       </div>
 
       <p className="mt-6 text-xs text-muted-foreground text-center leading-relaxed">
-        Subscriptions auto-renew unless cancelled at least 24h before the period
-        ends. Manage in your Google Play account.
+        Subscriptions auto-renew unless cancelled at least 24h before the period ends. Manage in
+        your Google Play account.
       </p>
     </div>
   );
