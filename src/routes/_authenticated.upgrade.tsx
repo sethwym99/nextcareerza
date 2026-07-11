@@ -162,6 +162,24 @@ function AndroidUpgrade() {
     return () => window.clearInterval(id);
   }, [showDebug]);
 
+  useEffect(() => {
+    if (!showDebug || serviceAccountInfo) return;
+    (async () => {
+      try {
+        const info = await getServiceAccount();
+        setServiceAccountInfo(info as ServiceAccountInfo);
+      } catch (e: any) {
+        setServiceAccountInfo({
+          clientEmail: null,
+          projectId: null,
+          privateKeyPresent: false,
+          privateKeyFingerprint: null,
+          error: e?.message || "Could not load service account info",
+        });
+      }
+    })();
+  }, [showDebug, serviceAccountInfo, getServiceAccount]);
+
   const buy = async (productId: string) => {
     setBusy(productId);
     try {
