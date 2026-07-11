@@ -45,6 +45,14 @@ type PlaySetupCheck = {
   error?: string;
 };
 
+type ServiceAccountInfo = {
+  clientEmail: string | null;
+  projectId: string | null;
+  privateKeyPresent: boolean;
+  privateKeyFingerprint: string | null;
+  error?: string;
+};
+
 function Upgrade() {
   if (isNativeApp()) {
     if (nativePlatform() === "android") return <AndroidUpgrade />;
