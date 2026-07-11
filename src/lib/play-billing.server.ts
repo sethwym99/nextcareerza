@@ -212,11 +212,10 @@ export async function checkGooglePlaySetup(): Promise<{
       return {
         ...base,
         tokenExchangeOk: true,
-        error:
-          denied
-            ? "Google Play token exchange succeeded, but app/package access is denied. In Google Play Console, grant this service account access to com.smforge.nextcareer with app access plus order/subscription permissions, then wait for permission propagation."
-            : missingPackage
-              ? `Google Play cannot find package ${EXPECTED_ANDROID_PACKAGE} for this service account. Confirm the package name and app access in Google Play.`
+        error: denied
+          ? "Google Play token exchange succeeded, but app/package access is denied. In Google Play Console, grant this service account access to com.smforge.nextcareer with app access plus order/subscription permissions, then wait for permission propagation."
+          : missingPackage
+            ? `Google Play cannot find package ${EXPECTED_ANDROID_PACKAGE} for this service account. Confirm the package name and app access in Google Play.`
             : `Google Play API package check failed (${resp.status})`,
       };
     }
@@ -297,8 +296,7 @@ export async function verifyAndApply(args: {
       raw = await getSubscriptionV2(args.purchaseToken);
       const state = raw?.subscriptionState as string | undefined;
       active =
-        state === "SUBSCRIPTION_STATE_ACTIVE" ||
-        state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
+        state === "SUBSCRIPTION_STATE_ACTIVE" || state === "SUBSCRIPTION_STATE_IN_GRACE_PERIOD";
       const line = raw?.lineItems?.[0];
       expiresAt = line?.expiryTime ?? null;
     }
