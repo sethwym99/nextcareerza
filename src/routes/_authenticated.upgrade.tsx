@@ -19,7 +19,10 @@ import {
   PRODUCT_IDS,
   type PlayProduct,
 } from "@/lib/play-billing";
-import { checkPlayBillingSetup } from "@/lib/play-billing.functions";
+import {
+  checkPlayBillingSetup,
+  getPlayServiceAccountInfo,
+} from "@/lib/play-billing.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
