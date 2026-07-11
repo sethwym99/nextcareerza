@@ -356,6 +356,56 @@ function AndroidUpgrade() {
               </p>
             )}
             {setupError && <p className="text-destructive leading-relaxed">{setupError}</p>}
+
+            <div className="pt-2 border-t border-border/40 space-y-2">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Service account email</span>
+                <span className="font-mono text-right">
+                  {serviceAccountInfo ? (
+                    serviceAccountInfo.clientEmail ?? (
+                      <span className="text-destructive">not set</span>
+                    )
+                  ) : (
+                    "Loading…"
+                  )}
+                </span>
+              </div>
+              {serviceAccountInfo?.projectId && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">GCP project</span>
+                  <span className="font-mono text-right">
+                    {serviceAccountInfo.projectId}
+                  </span>
+                </div>
+              )}
+              {serviceAccountInfo && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Private key</span>
+                  <span className="font-mono text-right">
+                    {serviceAccountInfo.privateKeyPresent ? "present" : "missing"}
+                  </span>
+                </div>
+              )}
+              {serviceAccountInfo?.privateKeyFingerprint && (
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground">Key fingerprint</span>
+                  <span className="font-mono text-right">
+                    {serviceAccountInfo.privateKeyFingerprint}
+                  </span>
+                </div>
+              )}
+              {serviceAccountInfo?.error && (
+                <p className="text-destructive leading-relaxed">
+                  {serviceAccountInfo.error}
+                </p>
+              )}
+              {serviceAccountInfo?.clientEmail && (
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  Compare this email with the account invited in Google Play
+                  Console → Users and permissions.
+                </p>
+              )}
+            </div>
             <details className="pt-2">
               <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
                 Billing details
