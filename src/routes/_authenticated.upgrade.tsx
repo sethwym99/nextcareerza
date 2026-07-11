@@ -117,12 +117,15 @@ function IosComingSoon() {
 
 function AndroidUpgrade() {
   const checkSetup = useServerFn(checkPlayBillingSetup);
+  const getServiceAccount = useServerFn(getPlayServiceAccountInfo);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<PlayProduct[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [setupCheck, setSetupCheck] = useState<PlaySetupCheck | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [serviceAccountInfo, setServiceAccountInfo] =
+    useState<ServiceAccountInfo | null>(null);
   const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
 
   const refreshBillingStatus = () => setBillingStatus(getBillingStatus());
