@@ -1,29 +1,47 @@
-## What the screenshot means
+Plan: Google Play service-account diagnostic on upgrade screen
 
-The app is reaching your backend, but Google Play is still denying the service account access to the exact Android package. This usually does not require a Codemagic rebuild. It is almost always one of these:
+Goal
+----
+Help you verify that the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` secret loaded by the app matches the service account invited in Google Play Console, without ever exposing the private key or full JSON in the UI.
 
-1. The backend secret `GOOGLE_PLAY_PACKAGE_NAME` is not exactly `com.smforge.nextcareer`.
-2. The service account was added in Google Play Console, but not granted access to this specific app.
-3. The service account has app access but is missing Monetization / order / subscription permissions.
-4. Google Play permission propagation has not completed yet.
-5. The app was installed from a sideloaded APK instead of the internal testing Play Store link.
+What will be built
+------------------
+1. Safe server-side metadata endpoint
+   - Create `getPlayServiceAccountInfo` in `src/lib/play-billing.functions.ts` (or a new `src/lib/play-billing.server.ts` helper called from it).
+   - It reads `process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` on the server only.
+   - Returns only:
+     - `client_email`
+     - `project_id` (from the JSON)
+     - `private_key_present` (boolean)
+     - `private_key_fingerprint` (first/last few characters + length, enough to spot the wrong key file)
+     - `key_age_hint` if we can derive one (e.g., from the JSON `client_id` timestamp or file metadata; otherwise omit)
+   - Never returns `private_key`, `client_id` secrets, or the raw JSON.
 
-## Plan
+2. Upgrade-screen debug panel update
+   - In `src/routes/_authenticated.upgrade.tsx`, fetch the metadata via `useServerFn` when the debug panel is opened.
+   - Display:
+     - Configured service account email
+     - Whether the private key is present
+     - A short fingerprint so you can confirm you uploaded the right file
+   - Keep it inside the existing debug accordion so normal users never see it.
 
-1. Check the Lovable Cloud backend status first so we know the backend is healthy before debugging permissions.
-2. Verify the configured runtime secrets are present without exposing their values:
-   - `GOOGLE_PLAY_PACKAGE_NAME`
-   - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`
-3. Re-run the existing backend setup check and inspect which exact flag is failing:
-   - package configured
-   - package matches app
-   - service account configured
-   - token exchange
-   - package access
-4. If the secrets are correct and only package access fails, no code change is needed. I’ll give you the exact Google Play Console checklist to fix it.
-5. If the package-name secret is wrong or missing, I’ll update the backend configuration path so the app clearly reports that instead of only showing “API access denied.”
-6. Optionally improve the in-app debug message so it shows “token works, package access denied” separately, making this easier to confirm from your phone.
+3. Security check
+   - Confirm the new function does not log the full JSON or private key.
+   - Confirm the response is only returned to authenticated users (use existing `requireSupabaseAuth` middleware or call from the `_authenticated` route component).
 
-## Technical details
+Files to change
+---------------
+- `src/lib/play-billing.functions.ts` — add `getPlayServiceAccountInfo` server function.
+- `src/lib/play-billing.server.ts` — add helper that parses and redacts the JSON.
+- `src/routes/_authenticated.upgrade.tsx` — wire the diagnostic into the debug panel.
 
-The code already checks package access by calling Google Play’s Android Publisher API for package `com.smforge.nextcareer`. A token exchange success means the JSON key is valid. A 401/403 during the package check means Google Play does not allow that service account to access this app/package yet.
+Out of scope
+------------
+- No changes to Codemagic, Android build, or Google Play Console permissions.
+- No changes to billing purchase flow.
+
+Acceptance criteria
+-------------------
+- Opening the debug panel on `/upgrade` (Android) shows the configured service account email.
+- The displayed email can be compared directly with the email invited in Play Console → Users and permissions.
+- The private key value is never visible in the UI, network response, or server logs.
