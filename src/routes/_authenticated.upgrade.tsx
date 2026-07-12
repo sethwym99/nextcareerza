@@ -32,6 +32,15 @@ type PlaySetupCheck = {
   tokenExchangeOk: boolean;
   packageAccessOk: boolean;
   expectedPackageName: string;
+  configuredPackageName?: string | null;
+  endpointChecks?: Array<{
+    id: string;
+    label: string;
+    ok: boolean;
+    status: number | null;
+    reason: string | null;
+    message: string | null;
+  }>;
   error?: string;
 };
 
@@ -223,9 +232,10 @@ function AndroidUpgrade() {
           )}
           {setupCheck?.tokenExchangeOk && !setupCheck.packageAccessOk && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs leading-relaxed text-destructive">
-              The service account JSON is valid, but Google Play has not granted it access to this
-              app yet. No Codemagic rebuild is needed for this; fix the app permissions in Google
-              Play Console, then wait for them to propagate.
+              The service account JSON is valid, but Google Play is still rejecting the Play API
+              catalog check. Since the account permissions look correct, check the endpoint details
+              below for the exact Google status/reason, then verify Play API linkage, app access
+              propagation, and active product/base-plan state.
             </div>
           )}
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
@@ -234,12 +244,12 @@ function AndroidUpgrade() {
               APK.
             </li>
             <li>
-              In Google Play Console, make sure the service account has access to app package{" "}
-              <code>com.smforge.nextcareer</code>.
+              Confirm the backend service account email shown in debug details exactly matches the
+              account in Google Play Console.
             </li>
             <li>
-              Give that service account permissions for app access plus orders and subscriptions,
-              then wait for Google Play permission propagation.
+              If permissions already look correct, verify Google Play Developer API linkage and wait
+              for Google Play permission/catalog propagation.
             </li>
             <li>
               Confirm these exact products are active in Google Play:
@@ -349,6 +359,10 @@ function AndroidUpgrade() {
                 <span className="font-mono text-right">
                   {setupCheck.packageNameMatchesApp ? "ok" : "not ok"}
                 </span>
+                <span>Configured package</span>
+                <span className="font-mono text-right break-all">
+                  {setupCheck.configuredPackageName ?? "missing"}
+                </span>
                 <span>Service account</span>
                 <span className="font-mono text-right">
                   {setupCheck.serviceAccountConfigured ? "set" : "missing"}
@@ -357,10 +371,36 @@ function AndroidUpgrade() {
                 <span className="font-mono text-right">
                   {setupCheck.tokenExchangeOk ? "ok" : "not ok"}
                 </span>
-                <span>Package access</span>
+                <span>Play API catalog</span>
                 <span className="font-mono text-right">
                   {setupCheck.packageAccessOk ? "ok" : "not ok"}
                 </span>
+              </div>
+            )}
+            {setupCheck?.endpointChecks && setupCheck.endpointChecks.length > 0 && (
+              <div className="pt-2 border-t border-border/40 space-y-2">
+                <div className="font-medium text-muted-foreground">Google Play endpoint checks</div>
+                {setupCheck.endpointChecks.map((check) => (
+                  <div key={check.id} className="rounded-lg bg-muted/60 p-2 space-y-1">
+                    <div className="flex justify-between gap-3">
+                      <span>{check.label}</span>
+                      <span className="font-mono text-right">
+                        {check.ok ? "ok" : `not ok${check.status ? ` (${check.status})` : ""}`}
+                      </span>
+                    </div>
+                    {check.reason && (
+                      <div className="flex justify-between gap-3 text-muted-foreground">
+                        <span>Reason</span>
+                        <span className="font-mono text-right break-all">{check.reason}</span>
+                      </div>
+                    )}
+                    {check.message && (
+                      <p className="text-muted-foreground leading-relaxed break-words">
+                        {check.message}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
             {setupCheck && !setupCheck.packageNameMatchesApp && (

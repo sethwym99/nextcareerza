@@ -23,6 +23,15 @@ export type PlayServiceAccountInfo = {
   error?: string;
 };
 
+export type PlayEndpointCheck = {
+  id: "inappproducts" | "subscriptions";
+  label: string;
+  ok: boolean;
+  status: number | null;
+  reason: string | null;
+  message: string | null;
+};
+
 export function getPlayServiceAccountInfo(): PlayServiceAccountInfo {
   const raw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
   if (!raw) {
@@ -161,6 +170,79 @@ async function getAccessToken(): Promise<string> {
   return json.access_token;
 }
 
+function sanitizeGoogleApiError(status: number, text: string): Pick<PlayEndpointCheck, "reason" | "message"> {
+  if (!text) return { reason: null, message: null };
+  try {
+    const parsed = JSON.parse(text) as {
+      error?: {
+        message?: string;
+        status?: string;
+        errors?: Array<{ reason?: string; message?: string }>;
+        details?: Array<{ reason?: string; message?: string }>;
+      };
+    };
+    const error = parsed.error;
+    const firstError = error?.errors?.[0] ?? error?.details?.[0];
+    return {
+      reason: firstError?.reason ?? error?.status ?? null,
+      message: firstError?.message ?? error?.message ?? `Google Play API failed with ${status}`,
+    };
+  } catch {
+    return {
+      reason: null,
+      message: text.slice(0, 240),
+    };
+  }
+}
+
+async function checkPlayEndpoint(args: {
+  id: PlayEndpointCheck["id"];
+  label: string;
+  token: string;
+  path: string;
+}): Promise<PlayEndpointCheck> {
+  try {
+    const resp = await fetch(`https://androidpublisher.googleapis.com${args.path}`, {
+      headers: { authorization: `Bearer ${args.token}` },
+    });
+    if (resp.ok) {
+      return {
+        id: args.id,
+        label: args.label,
+        ok: true,
+        status: resp.status,
+        reason: null,
+        message: null,
+      };
+    }
+
+    const text = await resp.text();
+    const sanitized = sanitizeGoogleApiError(resp.status, text);
+    console.warn("[play-billing] setup endpoint check failed", {
+      endpoint: args.id,
+      status: resp.status,
+      reason: sanitized.reason,
+      message: sanitized.message,
+    });
+    return {
+      id: args.id,
+      label: args.label,
+      ok: false,
+      status: resp.status,
+      ...sanitized,
+    };
+  } catch (e: any) {
+    return {
+      id: args.id,
+      label: args.label,
+      ok: false,
+      status: null,
+      reason: "request_failed",
+      message: String(e?.message || e).slice(0, 240),
+    };
+  }
+}
+
 export async function checkGooglePlaySetup(): Promise<{
   ok: boolean;
   packageNameConfigured: boolean;
@@ -169,6 +251,8 @@ export async function checkGooglePlaySetup(): Promise<{
   tokenExchangeOk: boolean;
   packageAccessOk: boolean;
   expectedPackageName: string;
+  configuredPackageName: string | null;
+  endpointChecks: PlayEndpointCheck[];
   error?: string;
 }> {
   const pkg = process.env.GOOGLE_PLAY_PACKAGE_NAME;
@@ -184,6 +268,8 @@ export async function checkGooglePlaySetup(): Promise<{
     tokenExchangeOk: false,
     packageAccessOk: false,
     expectedPackageName: EXPECTED_ANDROID_PACKAGE,
+    configuredPackageName: pkg ?? null,
+    endpointChecks: [],
   };
 
   if (!pkg || !serviceAccountConfigured) {
@@ -199,24 +285,33 @@ export async function checkGooglePlaySetup(): Promise<{
 
   try {
     const token = await getAccessToken();
-    const resp = await fetch(
-      `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(pkg)}/inappproducts?maxResults=1`,
-      { headers: { authorization: `Bearer ${token}` } },
-    );
 
-    if (!resp.ok) {
-      const text = await resp.text();
-      console.warn("[play-billing] setup check package access failed", resp.status, text);
-      const denied = resp.status === 401 || resp.status === 403;
-      const missingPackage = resp.status === 404;
+    const encodedPkg = encodeURIComponent(pkg);
+    const endpointChecks = await Promise.all([
+      checkPlayEndpoint({
+        id: "inappproducts",
+        label: "In-app products catalog",
+        token,
+        path: `/androidpublisher/v3/applications/${encodedPkg}/inappproducts?maxResults=1`,
+      }),
+      checkPlayEndpoint({
+        id: "subscriptions",
+        label: "Subscriptions catalog",
+        token,
+        path: `/androidpublisher/v3/applications/${encodedPkg}/subscriptions?pageSize=1`,
+      }),
+    ]);
+
+    const catalogOk = endpointChecks.every((check) => check.ok);
+    if (!catalogOk) {
+      const firstFailed = endpointChecks.find((check) => !check.ok);
+      const status = firstFailed?.status ? ` (${firstFailed.status})` : "";
+      const reason = firstFailed?.reason ? ` ${firstFailed.reason}:` : "";
       return {
         ...base,
         tokenExchangeOk: true,
-        error: denied
-          ? "Google Play token exchange succeeded, but app/package access is denied. In Google Play Console, grant this service account access to com.smforge.nextcareer with app access plus order/subscription permissions, then wait for permission propagation."
-          : missingPackage
-            ? `Google Play cannot find package ${EXPECTED_ANDROID_PACKAGE} for this service account. Confirm the package name and app access in Google Play.`
-            : `Google Play API package check failed (${resp.status})`,
+        endpointChecks,
+        error: `Google Play token exchange succeeded, but the Play API catalog check failed${status}.${reason} ${firstFailed?.message ?? "Check Play API linkage, app access propagation, and product/base-plan state."}`,
       };
     }
 
@@ -225,6 +320,7 @@ export async function checkGooglePlaySetup(): Promise<{
       ok: true,
       tokenExchangeOk: true,
       packageAccessOk: true,
+      endpointChecks,
     };
   } catch (e: any) {
     console.warn("[play-billing] setup check failed", String(e?.message || e));
