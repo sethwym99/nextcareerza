@@ -24,7 +24,7 @@ export type PlayServiceAccountInfo = {
 };
 
 export type PlayEndpointCheck = {
-  id: "inappproducts" | "subscriptions";
+  id: "oneTimeProducts" | "subscriptions";
   label: string;
   ok: boolean;
   status: number | null;
@@ -289,10 +289,10 @@ export async function checkGooglePlaySetup(): Promise<{
     const encodedPkg = encodeURIComponent(pkg);
     const endpointChecks = await Promise.all([
       checkPlayEndpoint({
-        id: "inappproducts",
-        label: "In-app products catalog",
+        id: "oneTimeProducts",
+        label: "One-time products catalog",
         token,
-        path: `/androidpublisher/v3/applications/${encodedPkg}/inappproducts?maxResults=1`,
+        path: `/androidpublisher/v3/applications/${encodedPkg}/oneTimeProducts?pageSize=1`,
       }),
       checkPlayEndpoint({
         id: "subscriptions",
