@@ -123,6 +123,7 @@ function AndroidUpgrade() {
   const [setupError, setSetupError] = useState<string | null>(null);
   const [serviceAccountInfo, setServiceAccountInfo] = useState<ServiceAccountInfo | null>(null);
   const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
+  const [initError, setInitError] = useState<string | null>(null);
 
   const refreshBillingStatus = () => setBillingStatus(getBillingStatus());
 
