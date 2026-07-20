@@ -142,8 +142,9 @@ function AndroidUpgrade() {
         await initBilling();
         const offerings = await getOfferings();
         setProducts(offerings);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        setInitError(e?.message || String(e) || "Unknown initialization error");
         toast.error("Could not load subscription options");
       } finally {
         refreshBillingStatus();
