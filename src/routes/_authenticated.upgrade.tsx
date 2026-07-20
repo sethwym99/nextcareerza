@@ -229,6 +229,12 @@ function AndroidUpgrade() {
           <p className="font-semibold text-foreground">
             Google Play products are not available on this install.
           </p>
+          {initError && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs leading-relaxed text-destructive">
+              <div className="font-semibold mb-1">Billing init error</div>
+              <div className="font-mono break-all">{initError}</div>
+            </div>
+          )}
           {setupError && (
             <p className="text-destructive text-xs leading-relaxed">Backend check: {setupError}</p>
           )}
