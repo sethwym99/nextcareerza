@@ -224,7 +224,8 @@ async function doInitBilling(): Promise<void> {
   const errors = await store.initialize([CdvPurchase.Platform.GOOGLE_PLAY]);
   initializeErrors = (errors ?? []).map(describeError);
   if (initializeErrors.length > 0) {
-    rememberError(initializeErrors.join("; "));
+    lastError = initializeErrors.join("; ");
+    rememberError(lastError);
   }
   await waitForStoreReady(store);
   if ((store.products ?? []).length === 0) {
@@ -233,6 +234,11 @@ async function doInitBilling(): Promise<void> {
       await waitForStoreReady(store, 2000);
     } catch (e) {
       rememberError(e);
+    }
+    if ((store.products ?? []).length === 0) {
+      const msg = "Products still empty after update";
+      rememberEvent(msg);
+      if (!lastError) lastError = msg;
     }
   }
   rememberEvent(`Billing initialized with ${(store.products ?? []).length} products`);
