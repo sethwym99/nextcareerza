@@ -110,10 +110,19 @@ async function waitForStoreReady(store: any, timeoutMs = 5000): Promise<void> {
 }
 
 async function getStore() {
-  // The package's d.ts isn't a real module; cast to any.
-  const mod: any = await import("cordova-plugin-purchase" as any);
-  const CdvPurchase = mod.CdvPurchase ?? (mod.default && mod.default.CdvPurchase) ?? mod;
-  return CdvPurchase;
+  try {
+    // The package's d.ts isn't a real module; cast to any.
+    const mod: any = await import("cordova-plugin-purchase" as any);
+    const CdvPurchase = mod.CdvPurchase ?? (mod.default && mod.default.CdvPurchase) ?? mod;
+    if (!CdvPurchase?.store) {
+      throw new Error("cordova-plugin-purchase loaded but store is undefined");
+    }
+    return CdvPurchase;
+  } catch (e: any) {
+    const message = `Failed to load billing plugin: ${describeError(e)}`;
+    rememberError(message);
+    throw new Error(message);
+  }
 }
 
 export async function initBilling(): Promise<void> {
@@ -121,9 +130,14 @@ export async function initBilling(): Promise<void> {
   if (initialized) return;
   if (initializing) return initializing;
 
-  initializing = doInitBilling().finally(() => {
-    initializing = null;
-  });
+  initializing = doInitBilling()
+    .catch((e) => {
+      rememberError(e);
+      throw e;
+    })
+    .finally(() => {
+      initializing = null;
+    });
   return initializing;
 }
 
@@ -210,7 +224,8 @@ async function doInitBilling(): Promise<void> {
   const errors = await store.initialize([CdvPurchase.Platform.GOOGLE_PLAY]);
   initializeErrors = (errors ?? []).map(describeError);
   if (initializeErrors.length > 0) {
-    rememberError(initializeErrors.join("; "));
+    lastError = initializeErrors.join("; ");
+    rememberError(lastError);
   }
   await waitForStoreReady(store);
   if ((store.products ?? []).length === 0) {
@@ -219,6 +234,11 @@ async function doInitBilling(): Promise<void> {
       await waitForStoreReady(store, 2000);
     } catch (e) {
       rememberError(e);
+    }
+    if ((store.products ?? []).length === 0) {
+      const msg = "Products still empty after update";
+      rememberEvent(msg);
+      if (!lastError) lastError = msg;
     }
   }
   rememberEvent(`Billing initialized with ${(store.products ?? []).length} products`);
