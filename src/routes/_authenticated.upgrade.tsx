@@ -351,6 +351,23 @@ function AndroidUpgrade() {
               <span className="text-muted-foreground">Products loaded</span>
               <span className="font-mono text-right">{status.productCount}</span>
             </div>
+            <div className="rounded-lg bg-muted/60 p-2 space-y-1">
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Last event</span>
+                <span className="font-mono text-right break-all">{status.lastEvent ?? "—"}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Last error</span>
+                <span className="font-mono text-right break-all text-destructive">
+                  {status.lastError ?? "—"}
+                </span>
+              </div>
+              {status.initializeErrors && status.initializeErrors.length > 0 && (
+                <div className="text-destructive font-mono break-all">
+                  init errors: {status.initializeErrors.join("; ")}
+                </div>
+              )}
+            </div>
             <div className="flex justify-between gap-3">
               <span className="text-muted-foreground">Backend setup</span>
               <span className="font-mono text-right">
