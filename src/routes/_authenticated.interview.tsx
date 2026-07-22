@@ -579,6 +579,13 @@ function Page() {
     }
     setPhase("loading");
     try {
+      const perms = await requestInterviewPermissions();
+      setPermissionStatus(perms);
+      if (perms.camera !== "granted" || perms.microphone !== "granted") {
+        setShowPermissionGate(true);
+        setPhase("setup");
+        return;
+      }
       await initCameraAndFace();
       await startFn({ data: { role } });
       await runConversation(role);
