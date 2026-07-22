@@ -3,9 +3,21 @@ import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { saveInterviewSession } from "@/lib/interview-sessions.functions";
+import {
+  requestInterviewPermissions,
+  openAppSettings,
+} from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
+import {
+  Mic,
+  Sparkles,
+  Video,
+  VideoOff,
+  AlertTriangle,
+  Trophy,
+  Settings,
+} from "lucide-react";
 import { InterviewerAvatar } from "@/components/interview/InterviewerAvatar";
 import { InterviewTabs } from "@/components/interview/InterviewTabs";
 
