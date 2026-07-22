@@ -884,3 +884,29 @@ function Badge({ ok, okLabel, badLabel }: { ok: boolean; okLabel: string; badLab
     </span>
   );
 }
+
+function PermissionBadge({
+  status,
+}: {
+  status: "granted" | "denied" | "prompt";
+}) {
+  if (status === "granted") {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-xs border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+        Allowed
+      </span>
+    );
+  }
+  if (status === "denied") {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-xs border border-rose-500/40 bg-rose-500/10 text-rose-400">
+        Denied
+      </span>
+    );
+  }
+  return (
+    <span className="px-2 py-0.5 rounded-full text-xs border border-amber-500/40 bg-amber-500/10 text-amber-400">
+      Not asked
+    </span>
+  );
+}
