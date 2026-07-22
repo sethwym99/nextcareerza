@@ -1,45 +1,56 @@
-## Root cause (now confirmed by the screenshot)
+## Plan: Android Camera & Microphone Permissions
 
-The debug panel shows:
+### Current state
+- `AndroidManifest.xml` only declares `INTERNET` and `BILLING`.
+- The interview route calls `navigator.mediaDevices.getUserMedia()` directly, which works in browsers but can fail silently on Android unless runtime permissions are requested first.
+- No Capacitor permission plugin is installed or used.
 
-- Last error: **"Failed to load billing plugin: cordova-plugin-purchase loaded but store is undefined"**
+### What we will build
 
-`cordova-plugin-purchase` v13 is a **Cordova plugin**, not a pure ES module. The npm package's ES export only exposes TypeScript types/enums; the actual runtime `store` instance is attached by the native bridge to `window.CdvPurchase` at `deviceready`. Our code in `src/lib/play-billing.ts` `getStore()` currently does:
+1. **Declare permissions in AndroidManifest.xml**
+   Add the required uses-permissions:
+   - `android.permission.CAMERA`
+   - `android.permission.RECORD_AUDIO`
+   - `android.permission.MODIFY_AUDIO_SETTINGS`
 
-```ts
-const mod: any = await import("cordova-plugin-purchase" as any);
-const CdvPurchase = mod.CdvPurchase ?? (mod.default && mod.default.CdvPurchase) ?? mod;
-if (!CdvPurchase?.store) throw new Error("...store is undefined");
-```
+2. **Install and configure the Capacitor Permissions plugin**
+   Add `@capacitor-community/android-permissions` (or use the built-in Capacitor Permissions API if available) so the app can request dangerous permissions at runtime.
 
-On device the ES import resolves but `store` is undefined because the store lives on `window.CdvPurchase`, populated only after Cordova's `deviceready` event fires. That's why init fails immediately every launch.
+3. **Create a cross-platform permission helper**
+   New file: `src/lib/permissions.ts`
+   - `requestCameraPermission()` — on native Android, calls the plugin; on web, returns granted immediately.
+   - `requestMicrophonePermission()` — same pattern.
+   - Returns `{ state: 'granted' | 'denied' | 'prompt' }` so the UI can react.
 
-## Plan
+4. **Update the interview setup flow**
+   In `src/routes/_authenticated.interview.tsx`:
+   - Before calling `getUserMedia`, call the helper to request camera + microphone.
+   - If denied, show a clear message explaining the permission is required and a button to open Android Settings (using `App` plugin).
+   - Keep the existing web flow unchanged.
 
-Small, targeted client-side fix in `src/lib/play-billing.ts` only. No backend, no Capacitor config, no rebuild-config changes (a new Codemagic build IS required since this is native-facing client code, same as before).
+5. **Add a permission-gate UI**
+   Show a pre-interview screen with:
+   - "Camera access" and "Microphone access" rows.
+   - A "Grant permissions" button.
+   - Error state if permissions are permanently denied with instructions to enable them in Settings.
 
-### 1. Wait for `deviceready` before touching the store
-Add a helper `waitForDeviceReady(timeoutMs = 8000)` that, on Android native, resolves when either:
-- `window.CdvPurchase?.store` is already present, or
-- `document.addEventListener("deviceready", ...)` fires, or
-- the timeout elapses (then we throw a clear "Cordova deviceready never fired — plugin not installed in APK" error, which is a distinct diagnostic).
-
-### 2. Read the store from `window.CdvPurchase` first
-Rewrite `getStore()` to:
-1. `await waitForDeviceReady()`.
-2. Prefer `(window as any).CdvPurchase` (the runtime global set by the native plugin).
-3. Fall back to the ES `import("cordova-plugin-purchase")` only for enum constants (`ProductType`, `Platform`, `LogLevel`) if the window global is missing them — but the store itself must come from the window global.
-4. If neither exposes a `store`, throw with a message that distinguishes "deviceready fired but no CdvPurchase global" (plugin missing from APK / cap sync didn't pick it up) from "store missing on CdvPurchase" (plugin partially loaded).
-
-### 3. Keep the existing diagnostics
-`rememberError` / `rememberEvent` calls stay so the debug panel keeps surfacing the exact failure string. Add a `rememberEvent("deviceready fired")` and `rememberEvent("CdvPurchase global detected")` so the next screenshot pinpoints where we get to.
+6. **Verify manifest and build**
+   - Confirm `android/app/src/main/AndroidManifest.xml` includes the new entries.
+   - Confirm `npx cap sync android` is run in `codemagic.yaml` so the plugin native code is included.
 
 ### Out of scope
-- No changes to `capacitor.config.ts`, Gradle files, or `codemagic.yaml`.
-- No backend / server-function changes.
-- No UI changes in `_authenticated.upgrade.tsx` (the debug panel already surfaces `lastEvent` / `lastError`).
+- iOS permission strings (`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`) — focus is Android only per your direction.
+- Changing the interview AI logic or face-tracking behavior.
 
-### Verification
-Trigger a new Codemagic build, install from internal testing, open Upgrade → Show debug info. Expected next state:
-- **Success:** "Billing initialized = Yes", "Products loaded = 3".
-- **If still failing:** the new "Last event" will pinpoint whether `deviceready` fired and whether `window.CdvPurchase` was populated, which tells us if the plugin is actually bundled into the APK (next fix would be re-running `npx cap sync android` in Codemagic or verifying the plugin appears in `android/capacitor.settings.gradle`).
+### Files to change
+- `android/app/src/main/AndroidManifest.xml`
+- `package.json` (add permission plugin)
+- `src/lib/permissions.ts` (new)
+- `src/routes/_authenticated.interview.tsx`
+- `codemagic.yaml` (ensure `npx cap sync android` runs)
+
+### Acceptance criteria
+- Fresh install on Android shows a runtime permission dialog when the user starts an interview.
+- Granting permissions starts the camera/microphone normally.
+- Denying permissions shows a helpful message instead of a blank camera or console error.
+- Web preview continues to work exactly as before.
