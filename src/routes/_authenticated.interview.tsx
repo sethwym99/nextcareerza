@@ -3,9 +3,21 @@ import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { saveInterviewSession } from "@/lib/interview-sessions.functions";
+import {
+  requestInterviewPermissions,
+  openAppSettings,
+} from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, Sparkles, Video, VideoOff, AlertTriangle, Trophy } from "lucide-react";
+import {
+  Mic,
+  Sparkles,
+  Video,
+  VideoOff,
+  AlertTriangle,
+  Trophy,
+  Settings,
+} from "lucide-react";
 import { InterviewerAvatar } from "@/components/interview/InterviewerAvatar";
 import { InterviewTabs } from "@/components/interview/InterviewTabs";
 
@@ -119,6 +131,11 @@ function Page() {
   const [focusStatus, setFocusStatus] = useState<FocusStatus>("ready");
   const [report, setReport] = useState<InterviewReport | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<{
+    camera: "granted" | "denied" | "prompt";
+    microphone: "granted" | "denied" | "prompt";
+  }>({ camera: "prompt", microphone: "prompt" });
+  const [showPermissionGate, setShowPermissionGate] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -562,6 +579,13 @@ function Page() {
     }
     setPhase("loading");
     try {
+      const perms = await requestInterviewPermissions();
+      setPermissionStatus(perms);
+      if (perms.camera !== "granted" || perms.microphone !== "granted") {
+        setShowPermissionGate(true);
+        setPhase("setup");
+        return;
+      }
       await initCameraAndFace();
       await startFn({ data: { role } });
       await runConversation(role);
@@ -658,6 +682,39 @@ function Page() {
               ))}
             </div>
           </div>
+          {showPermissionGate && (
+            <div className="mt-6 p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-left">
+              <h3 className="font-semibold flex items-center gap-2 text-amber-400">
+                <AlertTriangle className="h-4 w-4" /> Permissions required
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Camera and microphone access are needed for the interview.
+              </p>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>Camera</span>
+                  <PermissionBadge status={permissionStatus.camera} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Microphone</span>
+                  <PermissionBadge status={permissionStatus.microphone} />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button variant="hero" size="sm" onClick={begin}>
+                  Try again
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openAppSettings()}
+                  className="gap-1"
+                >
+                  <Settings className="h-3 w-3" /> Open settings
+                </Button>
+              </div>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground mt-4">
             Works best in Chrome/Edge on desktop.
           </p>
@@ -824,6 +881,32 @@ function Badge({ ok, okLabel, badLabel }: { ok: boolean; okLabel: string; badLab
       className={`px-2 py-1 rounded-full text-xs border ${ok ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-amber-500/40 bg-amber-500/10 text-amber-400"}`}
     >
       {ok ? okLabel : badLabel}
+    </span>
+  );
+}
+
+function PermissionBadge({
+  status,
+}: {
+  status: "granted" | "denied" | "prompt";
+}) {
+  if (status === "granted") {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-xs border border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+        Allowed
+      </span>
+    );
+  }
+  if (status === "denied") {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-xs border border-rose-500/40 bg-rose-500/10 text-rose-400">
+        Denied
+      </span>
+    );
+  }
+  return (
+    <span className="px-2 py-0.5 rounded-full text-xs border border-amber-500/40 bg-amber-500/10 text-amber-400">
+      Not asked
     </span>
   );
 }
