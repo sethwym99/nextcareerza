@@ -1,4 +1,4 @@
-import { isNativeApp, nativePlatform } from "@/lib/native-helpers";
+import { isNativeApp, nativePlatform } from "@/lib/platform";
 
 type PermissionState = "granted" | "denied" | "prompt";
 
