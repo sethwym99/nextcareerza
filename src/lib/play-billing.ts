@@ -109,21 +109,70 @@ async function waitForStoreReady(store: any, timeoutMs = 5000): Promise<void> {
   });
 }
 
+async function waitForDeviceReady(timeoutMs = 8000): Promise<void> {
+  if (typeof window === "undefined") return;
+  const w = window as any;
+  if (w.CdvPurchase?.store) return;
+  await new Promise<void>((resolve, reject) => {
+    let done = false;
+    const finish = (err?: Error) => {
+      if (done) return;
+      done = true;
+      if (err) reject(err);
+      else resolve();
+    };
+    const onReady = () => {
+      rememberEvent("deviceready fired");
+      finish();
+    };
+    try {
+      document.addEventListener("deviceready", onReady, { once: true });
+    } catch {
+      // ignore
+    }
+    // Poll as a safety net in case deviceready already fired before we attached.
+    const started = Date.now();
+    const poll = window.setInterval(() => {
+      if ((window as any).CdvPurchase?.store) {
+        window.clearInterval(poll);
+        rememberEvent("CdvPurchase global detected via poll");
+        finish();
+      } else if (Date.now() - started > timeoutMs) {
+        window.clearInterval(poll);
+        finish(new Error("Cordova deviceready never fired within " + timeoutMs + "ms — cordova-plugin-purchase is not installed in this APK. Rebuild after `npx cap sync android`."));
+      }
+    }, 200);
+  });
+}
+
 async function getStore() {
   try {
-    // The package's d.ts isn't a real module; cast to any.
+    await waitForDeviceReady();
+    const w = window as any;
+    const runtime = w.CdvPurchase;
+    if (runtime?.store) {
+      rememberEvent("CdvPurchase global detected");
+      return runtime;
+    }
+    // Fallback: try ES import (mostly gives enums, but attempt store as a last resort).
     const mod: any = await import("cordova-plugin-purchase" as any);
     const CdvPurchase = mod.CdvPurchase ?? (mod.default && mod.default.CdvPurchase) ?? mod;
-    if (!CdvPurchase?.store) {
-      throw new Error("cordova-plugin-purchase loaded but store is undefined");
+    if (CdvPurchase?.store) {
+      rememberEvent("CdvPurchase resolved via ES import");
+      return CdvPurchase;
     }
-    return CdvPurchase;
+    // Merge: if runtime exists but has no store, or ES import has enums but no store.
+    if (runtime && !runtime.store) {
+      throw new Error("window.CdvPurchase is present but store is undefined — native plugin loaded partially. Try reinstalling the APK.");
+    }
+    throw new Error("deviceready fired but window.CdvPurchase is missing — cordova-plugin-purchase is not bundled in the APK. Verify android/capacitor.settings.gradle includes it and rerun Codemagic.");
   } catch (e: any) {
     const message = `Failed to load billing plugin: ${describeError(e)}`;
     rememberError(message);
     throw new Error(message);
   }
 }
+
 
 export async function initBilling(): Promise<void> {
   if (!isNativeApp() || nativePlatform() !== "android") return;
