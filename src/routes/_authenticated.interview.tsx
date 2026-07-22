@@ -682,6 +682,39 @@ function Page() {
               ))}
             </div>
           </div>
+          {showPermissionGate && (
+            <div className="mt-6 p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-left">
+              <h3 className="font-semibold flex items-center gap-2 text-amber-400">
+                <AlertTriangle className="h-4 w-4" /> Permissions required
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Camera and microphone access are needed for the interview.
+              </p>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>Camera</span>
+                  <PermissionBadge status={permissionStatus.camera} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Microphone</span>
+                  <PermissionBadge status={permissionStatus.microphone} />
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button variant="hero" size="sm" onClick={begin}>
+                  Try again
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openAppSettings()}
+                  className="gap-1"
+                >
+                  <Settings className="h-3 w-3" /> Open settings
+                </Button>
+              </div>
+            </div>
+          )}
           <p className="text-xs text-muted-foreground mt-4">
             Works best in Chrome/Edge on desktop.
           </p>
