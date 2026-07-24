@@ -123,7 +123,38 @@ function AuthPage() {
           NextCareer
         </Link>
         <div className="glass-card rounded-2xl p-8">
-          {tab !== "forgot" ? (
+          {pendingVerification ? (
+            <div className="space-y-4 text-center">
+              <h2 className="font-display text-2xl font-bold">Verify your email</h2>
+              <p className="text-sm text-muted-foreground">
+                We sent a verification link to <strong>{pendingVerification}</strong>. Click the link in the email to activate your account.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Don't see it? Check your spam folder.
+              </p>
+              <Button
+                type="button"
+                variant="hero"
+                className="w-full min-h-12"
+                disabled={busy || resendCooldown > 0}
+                onClick={handleResend}
+              >
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : busy ? "Sending…" : "Resend verification email"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setPendingVerification(null);
+                  setPassword("");
+                  setTab("signin");
+                }}
+              >
+                Back to sign in
+              </Button>
+            </div>
+          ) : tab !== "forgot" ? (
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
               <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
