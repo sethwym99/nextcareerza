@@ -1,56 +1,34 @@
-## Plan: Android Camera & Microphone Permissions
+# Require Email Verification on Signup
 
-### Current state
-- `AndroidManifest.xml` only declares `INTERNET` and `BILLING`.
-- The interview route calls `navigator.mediaDevices.getUserMedia()` directly, which works in browsers but can fail silently on Android unless runtime permissions are requested first.
-- No Capacitor permission plugin is installed or used.
+Right now anyone can sign up with any email address and immediately get an account — there's no proof they own the inbox. We'll require users to verify their email before the account becomes usable.
 
-### What we will build
+## Approach
 
-1. **Declare permissions in AndroidManifest.xml**
-   Add the required uses-permissions:
-   - `android.permission.CAMERA`
-   - `android.permission.RECORD_AUDIO`
-   - `android.permission.MODIFY_AUDIO_SETTINGS`
+Use Supabase's built-in email confirmation flow (already wired to your custom `notify.nextcareer.one` sender via the auth webhook and `SignupEmail` template).
 
-2. **Install and configure the Capacitor Permissions plugin**
-   Add `@capacitor-community/android-permissions` (or use the built-in Capacitor Permissions API if available) so the app can request dangerous permissions at runtime.
+## Changes
 
-3. **Create a cross-platform permission helper**
-   New file: `src/lib/permissions.ts`
-   - `requestCameraPermission()` — on native Android, calls the plugin; on web, returns granted immediately.
-   - `requestMicrophonePermission()` — same pattern.
-   - Returns `{ state: 'granted' | 'denied' | 'prompt' }` so the UI can react.
+1. **Disable auto-confirm** in auth settings so new signups start unconfirmed and receive the verification email.
 
-4. **Update the interview setup flow**
-   In `src/routes/_authenticated.interview.tsx`:
-   - Before calling `getUserMedia`, call the helper to request camera + microphone.
-   - If denied, show a clear message explaining the permission is required and a button to open Android Settings (using `App` plugin).
-   - Keep the existing web flow unchanged.
+2. **Update signup flow** in `src/routes/auth.tsx`:
+   - After `supabase.auth.signUp`, detect the "unconfirmed" state (session will be `null`).
+   - Instead of navigating to `/dashboard`, show a "Check your email to verify your account" screen with the email address and a "Resend email" button (calls `supabase.auth.resend`).
+   - Do not sign the user in until they click the link.
 
-5. **Add a permission-gate UI**
-   Show a pre-interview screen with:
-   - "Camera access" and "Microphone access" rows.
-   - A "Grant permissions" button.
-   - Error state if permissions are permanently denied with instructions to enable them in Settings.
+3. **Handle the verification callback**:
+   - The signup email's confirmation link already points to `/dashboard`. Keep that — once clicked, Supabase sets the session and the authenticated layout takes over.
+   - Add a small toast on first authenticated load if arriving from verification (optional polish).
 
-6. **Verify manifest and build**
-   - Confirm `android/app/src/main/AndroidManifest.xml` includes the new entries.
-   - Confirm `npx cap sync android` is run in `codemagic.yaml` so the plugin native code is included.
+4. **Google sign-in stays unchanged** — Google already provides a verified email, so no extra step needed there.
 
-### Out of scope
-- iOS permission strings (`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`) — focus is Android only per your direction.
-- Changing the interview AI logic or face-tracking behavior.
+5. **Existing unverified accounts**: any accounts already created with unverified emails will simply be asked to verify next time they try to sign in (Supabase blocks sign-in for unconfirmed users once auto-confirm is off). We won't mass-delete them.
 
-### Files to change
-- `android/app/src/main/AndroidManifest.xml`
-- `package.json` (add permission plugin)
-- `src/lib/permissions.ts` (new)
-- `src/routes/_authenticated.interview.tsx`
-- `codemagic.yaml` (ensure `npx cap sync android` runs)
+## Technical notes
 
-### Acceptance criteria
-- Fresh install on Android shows a runtime permission dialog when the user starts an interview.
-- Granting permissions starts the camera/microphone normally.
-- Denying permissions shows a helpful message instead of a blank camera or console error.
-- Web preview continues to work exactly as before.
+- Tool: `supabase--configure_auth` with `auto_confirm_email: false`.
+- The `SignupEmail` template and `/lovable/email/auth/webhook` route are already in place, so verification emails will send through your existing branded flow.
+- No database migration needed.
+
+## Out of scope
+
+- OTP/code-based verification (6-digit code instead of link). The magic-link flow is already set up and more reliable on mobile; switching to OTP would require a new template + verification UI. Let me know if you'd prefer that instead.

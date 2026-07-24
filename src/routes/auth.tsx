@@ -28,17 +28,44 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
     if (!loading && session) navigate({ to: "/dashboard" });
   }, [loading, session, navigate]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  async function handleResend() {
+    if (!pendingVerification) return;
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: pendingVerification,
+        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      });
+      if (error) throw error;
+      toast.success("Verification email sent again.");
+      setResendCooldown(30);
+    } catch (err: any) {
+      toast.error(err.message || "Could not resend email");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handle(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
       if (tab === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -47,11 +74,26 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Welcome to NextCareer!");
-        navigate({ to: "/dashboard" });
+        // With email confirmation required, session will be null until verified.
+        if (!data.session) {
+          setPendingVerification(email);
+          setResendCooldown(30);
+          toast.success("Check your inbox to verify your email.");
+        } else {
+          toast.success("Welcome to NextCareer!");
+          navigate({ to: "/dashboard" });
+        }
       } else if (tab === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          if (/confirm|verif/i.test(error.message)) {
+            setPendingVerification(email);
+            setResendCooldown(0);
+            toast.error("Please verify your email first.");
+            return;
+          }
+          throw error;
+        }
         toast.success("Signed in");
         navigate({ to: "/dashboard" });
       } else {
@@ -81,7 +123,38 @@ function AuthPage() {
           NextCareer
         </Link>
         <div className="glass-card rounded-2xl p-8">
-          {tab !== "forgot" ? (
+          {pendingVerification ? (
+            <div className="space-y-4 text-center">
+              <h2 className="font-display text-2xl font-bold">Verify your email</h2>
+              <p className="text-sm text-muted-foreground">
+                We sent a verification link to <strong>{pendingVerification}</strong>. Click the link in the email to activate your account.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Don't see it? Check your spam folder.
+              </p>
+              <Button
+                type="button"
+                variant="hero"
+                className="w-full min-h-12"
+                disabled={busy || resendCooldown > 0}
+                onClick={handleResend}
+              >
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : busy ? "Sending…" : "Resend verification email"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setPendingVerification(null);
+                  setPassword("");
+                  setTab("signin");
+                }}
+              >
+                Back to sign in
+              </Button>
+            </div>
+          ) : tab !== "forgot" ? (
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
               <TabsList className="grid grid-cols-2 w-full">
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
