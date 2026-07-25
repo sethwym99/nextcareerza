@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Sparkles, RotateCcw, ChevronDown, ChevronUp, Bug } from "lucide-react";
+import { Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import {
   initBilling,
@@ -12,7 +11,6 @@ import {
   PRODUCT_IDS,
   type PlayProduct,
 } from "@/lib/play-billing";
-import { checkPlayBillingSetup, getPlayServiceAccountInfo } from "@/lib/play-billing.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
