@@ -22,33 +22,6 @@ const NOTIFY_URL =
   "https://project--0d4ca1e2-ec48-4d2b-8543-5744fc5f0f2c.lovable.app/api/public/payments";
 const RECEIVER = "35985205";
 
-type PlaySetupCheck = {
-  ok: boolean;
-  packageNameConfigured: boolean;
-  packageNameMatchesApp: boolean;
-  serviceAccountConfigured: boolean;
-  tokenExchangeOk: boolean;
-  packageAccessOk: boolean;
-  expectedPackageName: string;
-  configuredPackageName?: string | null;
-  endpointChecks?: Array<{
-    id: string;
-    label: string;
-    ok: boolean;
-    status: number | null;
-    reason: string | null;
-    message: string | null;
-  }>;
-  error?: string;
-};
-
-type ServiceAccountInfo = {
-  clientEmail: string | null;
-  projectId: string | null;
-  privateKeyPresent: boolean;
-  privateKeyFingerprint: string | null;
-  error?: string;
-};
 
 function Upgrade() {
   if (isNativeApp()) {
@@ -111,15 +84,9 @@ function IosComingSoon() {
 }
 
 function AndroidUpgrade() {
-  const checkSetup = useServerFn(checkPlayBillingSetup);
-  const getServiceAccount = useServerFn(getPlayServiceAccountInfo);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<PlayProduct[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
-  const [setupCheck, setSetupCheck] = useState<PlaySetupCheck | null>(null);
-  const [setupError, setSetupError] = useState<string | null>(null);
-  const [serviceAccountInfo, setServiceAccountInfo] = useState<ServiceAccountInfo | null>(null);
   const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
   const [initError, setInitError] = useState<string | null>(null);
 
