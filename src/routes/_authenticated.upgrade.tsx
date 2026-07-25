@@ -167,25 +167,14 @@ function AndroidUpgrade() {
               <div className="font-mono break-all">{initError}</div>
             </div>
           )}
-          {setupError && (
-            <p className="text-destructive text-xs leading-relaxed">Backend check: {setupError}</p>
-          )}
-          {setupCheck?.tokenExchangeOk && !setupCheck.packageAccessOk && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs leading-relaxed text-destructive">
-              The service account JSON is valid, but Google Play is still rejecting the Play API
-              catalog check. Since the account permissions look correct, check the endpoint details
-              below for the exact Google status/reason, then verify Play API linkage, app access
-              propagation, and active product/base-plan state.
-            </div>
-          )}
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
             <li>
               Install the app from the Google Play internal testing opt-in link, not a side-loaded
               APK.
             </li>
             <li>
-              Confirm the backend service account email shown in debug details exactly matches the
-              account in Google Play Console.
+              Verify the service account in your backend has permission to access Google Play
+              Console data.
             </li>
             <li>
               If permissions already look correct, verify Google Play Developer API linkage and wait
@@ -208,9 +197,6 @@ function AndroidUpgrade() {
             <li>
               Make sure your tester Google account accepted the test invite and can see this app in
               Play Store.
-            </li>
-            <li>
-              Open the debug details below and check product count, loaded IDs, and last error.
             </li>
           </ol>
         </div>
