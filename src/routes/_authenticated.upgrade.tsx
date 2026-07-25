@@ -95,15 +95,6 @@ function AndroidUpgrade() {
   useEffect(() => {
     (async () => {
       try {
-        try {
-          const setup = await checkSetup();
-          setSetupCheck(setup as PlaySetupCheck);
-          if (!(setup as PlaySetupCheck).ok && (setup as PlaySetupCheck).error) {
-            setSetupError((setup as PlaySetupCheck).error ?? null);
-          }
-        } catch (e: any) {
-          setSetupError(e?.message || "Could not check Google Play backend setup");
-        }
         await initBilling();
         const offerings = await getOfferings();
         setProducts(offerings);
@@ -118,30 +109,6 @@ function AndroidUpgrade() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (!showDebug) return;
-    refreshBillingStatus();
-    const id = window.setInterval(refreshBillingStatus, 1000);
-    return () => window.clearInterval(id);
-  }, [showDebug]);
-
-  useEffect(() => {
-    if (!showDebug || serviceAccountInfo) return;
-    (async () => {
-      try {
-        const info = await getServiceAccount();
-        setServiceAccountInfo(info as ServiceAccountInfo);
-      } catch (e: any) {
-        setServiceAccountInfo({
-          clientEmail: null,
-          projectId: null,
-          privateKeyPresent: false,
-          privateKeyFingerprint: null,
-          error: e?.message || "Could not load service account info",
-        });
-      }
-    })();
-  }, [showDebug, serviceAccountInfo, getServiceAccount]);
 
   const buy = async (productId: string) => {
     setBusy(productId);
