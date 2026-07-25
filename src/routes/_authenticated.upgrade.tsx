@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Sparkles, RotateCcw, ChevronDown, ChevronUp, Bug } from "lucide-react";
+import { Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import {
   initBilling,
@@ -12,7 +11,6 @@ import {
   PRODUCT_IDS,
   type PlayProduct,
 } from "@/lib/play-billing";
-import { checkPlayBillingSetup, getPlayServiceAccountInfo } from "@/lib/play-billing.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/upgrade")({
@@ -24,33 +22,6 @@ const NOTIFY_URL =
   "https://project--0d4ca1e2-ec48-4d2b-8543-5744fc5f0f2c.lovable.app/api/public/payments";
 const RECEIVER = "35985205";
 
-type PlaySetupCheck = {
-  ok: boolean;
-  packageNameConfigured: boolean;
-  packageNameMatchesApp: boolean;
-  serviceAccountConfigured: boolean;
-  tokenExchangeOk: boolean;
-  packageAccessOk: boolean;
-  expectedPackageName: string;
-  configuredPackageName?: string | null;
-  endpointChecks?: Array<{
-    id: string;
-    label: string;
-    ok: boolean;
-    status: number | null;
-    reason: string | null;
-    message: string | null;
-  }>;
-  error?: string;
-};
-
-type ServiceAccountInfo = {
-  clientEmail: string | null;
-  projectId: string | null;
-  privateKeyPresent: boolean;
-  privateKeyFingerprint: string | null;
-  error?: string;
-};
 
 function Upgrade() {
   if (isNativeApp()) {
@@ -113,15 +84,9 @@ function IosComingSoon() {
 }
 
 function AndroidUpgrade() {
-  const checkSetup = useServerFn(checkPlayBillingSetup);
-  const getServiceAccount = useServerFn(getPlayServiceAccountInfo);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<PlayProduct[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
-  const [setupCheck, setSetupCheck] = useState<PlaySetupCheck | null>(null);
-  const [setupError, setSetupError] = useState<string | null>(null);
-  const [serviceAccountInfo, setServiceAccountInfo] = useState<ServiceAccountInfo | null>(null);
   const [billingStatus, setBillingStatus] = useState(() => getBillingStatus());
   const [initError, setInitError] = useState<string | null>(null);
 
@@ -130,15 +95,6 @@ function AndroidUpgrade() {
   useEffect(() => {
     (async () => {
       try {
-        try {
-          const setup = await checkSetup();
-          setSetupCheck(setup as PlaySetupCheck);
-          if (!(setup as PlaySetupCheck).ok && (setup as PlaySetupCheck).error) {
-            setSetupError((setup as PlaySetupCheck).error ?? null);
-          }
-        } catch (e: any) {
-          setSetupError(e?.message || "Could not check Google Play backend setup");
-        }
         await initBilling();
         const offerings = await getOfferings();
         setProducts(offerings);
@@ -153,30 +109,6 @@ function AndroidUpgrade() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (!showDebug) return;
-    refreshBillingStatus();
-    const id = window.setInterval(refreshBillingStatus, 1000);
-    return () => window.clearInterval(id);
-  }, [showDebug]);
-
-  useEffect(() => {
-    if (!showDebug || serviceAccountInfo) return;
-    (async () => {
-      try {
-        const info = await getServiceAccount();
-        setServiceAccountInfo(info as ServiceAccountInfo);
-      } catch (e: any) {
-        setServiceAccountInfo({
-          clientEmail: null,
-          projectId: null,
-          privateKeyPresent: false,
-          privateKeyFingerprint: null,
-          error: e?.message || "Could not load service account info",
-        });
-      }
-    })();
-  }, [showDebug, serviceAccountInfo, getServiceAccount]);
 
   const buy = async (productId: string) => {
     setBusy(productId);
@@ -235,25 +167,14 @@ function AndroidUpgrade() {
               <div className="font-mono break-all">{initError}</div>
             </div>
           )}
-          {setupError && (
-            <p className="text-destructive text-xs leading-relaxed">Backend check: {setupError}</p>
-          )}
-          {setupCheck?.tokenExchangeOk && !setupCheck.packageAccessOk && (
-            <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs leading-relaxed text-destructive">
-              The service account JSON is valid, but Google Play is still rejecting the Play API
-              catalog check. Since the account permissions look correct, check the endpoint details
-              below for the exact Google status/reason, then verify Play API linkage, app access
-              propagation, and active product/base-plan state.
-            </div>
-          )}
           <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
             <li>
               Install the app from the Google Play internal testing opt-in link, not a side-loaded
               APK.
             </li>
             <li>
-              Confirm the backend service account email shown in debug details exactly matches the
-              account in Google Play Console.
+              Verify the service account in your backend has permission to access Google Play
+              Console data.
             </li>
             <li>
               If permissions already look correct, verify Google Play Developer API linkage and wait
@@ -276,9 +197,6 @@ function AndroidUpgrade() {
             <li>
               Make sure your tester Google account accepted the test invite and can see this app in
               Play Store.
-            </li>
-            <li>
-              Open the debug details below and check product count, loaded IDs, and last error.
             </li>
           </ol>
         </div>
@@ -319,176 +237,6 @@ function AndroidUpgrade() {
         Restore purchases
       </button>
 
-      <div className="mt-6">
-        <button
-          onClick={() => setShowDebug((s) => !s)}
-          className="w-full inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Bug className="h-3.5 w-3.5" />
-          {showDebug ? "Hide debug info" : "Show debug info"}
-          {showDebug ? (
-            <ChevronUp className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )}
-        </button>
-
-        {showDebug && (
-          <div className="mt-3 glass-card rounded-xl p-4 text-xs space-y-2">
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Platform</span>
-              <span className="font-mono text-right">{status.platform}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Billing ready</span>
-              <span className="font-mono text-right">{status.ready ? "Yes" : "No"}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Billing initialized</span>
-              <span className="font-mono text-right">{status.initialized ? "Yes" : "No"}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Products loaded</span>
-              <span className="font-mono text-right">{status.productCount}</span>
-            </div>
-            <div className="rounded-lg bg-muted/60 p-2 space-y-1">
-              <div className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Last event</span>
-                <span className="font-mono text-right break-all">{status.lastEvent ?? "—"}</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Last error</span>
-                <span className="font-mono text-right break-all text-destructive">
-                  {status.lastError ?? "—"}
-                </span>
-              </div>
-              {status.initializeErrors && status.initializeErrors.length > 0 && (
-                <div className="text-destructive font-mono break-all">
-                  init errors: {status.initializeErrors.join("; ")}
-                </div>
-              )}
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Backend setup</span>
-              <span className="font-mono text-right">
-                {setupCheck ? (setupCheck.ok ? "OK" : "Needs attention") : "Checking"}
-              </span>
-            </div>
-            {setupCheck && (
-              <div className="grid grid-cols-2 gap-2 pt-1 text-muted-foreground">
-                <span>Package</span>
-                <span className="font-mono text-right">
-                  {setupCheck.packageNameConfigured ? "set" : "missing"}
-                </span>
-                <span>Package match</span>
-                <span className="font-mono text-right">
-                  {setupCheck.packageNameMatchesApp ? "ok" : "not ok"}
-                </span>
-                <span>Configured package</span>
-                <span className="font-mono text-right break-all">
-                  {setupCheck.configuredPackageName ?? "missing"}
-                </span>
-                <span>Service account</span>
-                <span className="font-mono text-right">
-                  {setupCheck.serviceAccountConfigured ? "set" : "missing"}
-                </span>
-                <span>Token exchange</span>
-                <span className="font-mono text-right">
-                  {setupCheck.tokenExchangeOk ? "ok" : "not ok"}
-                </span>
-                <span>Play API catalog</span>
-                <span className="font-mono text-right">
-                  {setupCheck.packageAccessOk ? "ok" : "not ok"}
-                </span>
-              </div>
-            )}
-            {setupCheck?.endpointChecks && setupCheck.endpointChecks.length > 0 && (
-              <div className="pt-2 border-t border-border/40 space-y-2">
-                <div className="font-medium text-muted-foreground">Google Play endpoint checks</div>
-                {setupCheck.endpointChecks.map((check) => (
-                  <div key={check.id} className="rounded-lg bg-muted/60 p-2 space-y-1">
-                    <div className="flex justify-between gap-3">
-                      <span>{check.label}</span>
-                      <span className="font-mono text-right">
-                        {check.ok ? "ok" : `not ok${check.status ? ` (${check.status})` : ""}`}
-                      </span>
-                    </div>
-                    {check.reason && (
-                      <div className="flex justify-between gap-3 text-muted-foreground">
-                        <span>Reason</span>
-                        <span className="font-mono text-right break-all">{check.reason}</span>
-                      </div>
-                    )}
-                    {check.message && (
-                      <p className="text-muted-foreground leading-relaxed break-words">
-                        {check.message}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {setupCheck && !setupCheck.packageNameMatchesApp && (
-              <p className="text-destructive leading-relaxed">
-                Expected package: <code>{setupCheck.expectedPackageName}</code>
-              </p>
-            )}
-            {setupError && <p className="text-destructive leading-relaxed">{setupError}</p>}
-
-            <div className="pt-2 border-t border-border/40 space-y-2">
-              <div className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Service account email</span>
-                <span className="font-mono text-right">
-                  {serviceAccountInfo
-                    ? (serviceAccountInfo.clientEmail ?? (
-                        <span className="text-destructive">not set</span>
-                      ))
-                    : "Loading…"}
-                </span>
-              </div>
-              {serviceAccountInfo?.projectId && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">GCP project</span>
-                  <span className="font-mono text-right">{serviceAccountInfo.projectId}</span>
-                </div>
-              )}
-              {serviceAccountInfo && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Private key</span>
-                  <span className="font-mono text-right">
-                    {serviceAccountInfo.privateKeyPresent ? "present" : "missing"}
-                  </span>
-                </div>
-              )}
-              {serviceAccountInfo?.privateKeyFingerprint && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Key fingerprint</span>
-                  <span className="font-mono text-right">
-                    {serviceAccountInfo.privateKeyFingerprint}
-                  </span>
-                </div>
-              )}
-              {serviceAccountInfo?.error && (
-                <p className="text-destructive leading-relaxed">{serviceAccountInfo.error}</p>
-              )}
-              {serviceAccountInfo?.clientEmail && (
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  Compare this email with the account invited in Google Play Console → Users and
-                  permissions.
-                </p>
-              )}
-            </div>
-            <details className="pt-2">
-              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                Billing details
-              </summary>
-              <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted p-2 text-[10px] whitespace-pre-wrap">
-                {JSON.stringify(status, null, 2)}
-              </pre>
-            </details>
-          </div>
-        )}
-      </div>
 
       <p className="mt-6 text-xs text-muted-foreground text-center leading-relaxed">
         Subscriptions auto-renew unless cancelled at least 24h before the period ends. Manage in
