@@ -126,11 +126,6 @@ function Page() {
   const [focusStatus, setFocusStatus] = useState<FocusStatus>("ready");
   const [report, setReport] = useState<InterviewReport | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState<{
-    camera: "granted" | "denied" | "prompt";
-    microphone: "granted" | "denied" | "prompt";
-  }>({ camera: "prompt", microphone: "prompt" });
-  const [showPermissionGate, setShowPermissionGate] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
