@@ -36,8 +36,11 @@ import {
   listShortlist,
   addToShortlist,
   removeFromShortlist,
+  estimateSalaries,
   type JobHit,
+  type SalaryEstimate,
 } from "@/lib/smart-apply.functions";
+
 
 export const Route = createFileRoute("/_authenticated/smart-apply")({
   head: () => ({ meta: [{ title: "Smart Apply — NextCareer" }] }),
@@ -56,6 +59,8 @@ function Page() {
   const runListShortlist = useServerFn(listShortlist);
   const runAddShortlist = useServerFn(addToShortlist);
   const runRemoveShortlist = useServerFn(removeFromShortlist);
+  const runEstimateSalaries = useServerFn(estimateSalaries);
+
 
   const { data: cvData } = useQuery({
     queryKey: ["base-cv"],
@@ -77,6 +82,8 @@ function Page() {
   const [jobs, setJobs] = useState<JobHit[] | null>(null);
   const [selected, setSelected] = useState<JobHit | null>(null);
   const [result, setResult] = useState<TailorResult | null>(null);
+  const [salaryMap, setSalaryMap] = useState<Record<string, SalaryEstimate>>({});
+
 
   const shortlistMut = useMutation({
     mutationFn: async (job: JobHit) => {
@@ -128,10 +135,34 @@ function Page() {
       setJobs(out);
       setSelected(null);
       setResult(null);
-      if (out.length === 0) toast.info("No jobs found. Try a broader role or location.");
+      setSalaryMap({});
+      if (out.length === 0) {
+        toast.info("No jobs found. Try a broader role or location.");
+        return;
+      }
+      // Fire-and-forget salary estimates
+      runEstimateSalaries({
+        data: {
+          seniority: seniority.trim(),
+          location: location.trim(),
+          jobs: out.map((j) => ({
+            id: j.id,
+            title: j.title,
+            company: j.company,
+            location: j.location,
+          })),
+        },
+      })
+        .then((r) => {
+          const map: Record<string, SalaryEstimate> = {};
+          for (const e of r.estimates) map[e.id] = e;
+          setSalaryMap(map);
+        })
+        .catch(() => {});
     },
     onError: (e: any) => toast.error(e.message ?? "Search failed"),
   });
+
 
   const tailorMut = useMutation({
     mutationFn: async (job: JobHit) => {
@@ -307,6 +338,7 @@ function Page() {
                 job={j}
                 active={selected?.id === j.id}
                 shortlisted={shortlistUrls.has(j.url)}
+                salary={salaryMap[j.id]}
                 onPick={() => pick(j)}
                 onToggleShortlist={() => shortlistMut.mutate(j)}
               />
@@ -533,12 +565,14 @@ function JobCard({
   job,
   active,
   shortlisted,
+  salary,
   onPick,
   onToggleShortlist,
 }: {
   job: JobHit;
   active: boolean;
   shortlisted: boolean;
+  salary?: SalaryEstimate;
   onPick: () => void;
   onToggleShortlist: () => void;
 }) {
@@ -570,6 +604,13 @@ function JobCard({
           )}
         </button>
       </div>
+      {salary && salary.high > 0 && (
+        <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/30">
+          <DollarSign className="h-3 w-3" />
+          {fmt(salary.low, salary.currency)} – {fmt(salary.high, salary.currency)}
+          <span className="opacity-70">/ {salary.period}</span>
+        </div>
+      )}
       {job.snippet && (
         <button onClick={onPick} className="block text-left w-full">
           <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{job.snippet}</p>
