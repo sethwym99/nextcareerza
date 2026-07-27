@@ -604,7 +604,14 @@ function JobCard({
           )}
         </button>
       </div>
-      {job.snippet && (
+      {salary && salary.high > 0 && (
+        <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/30">
+          <DollarSign className="h-3 w-3" />
+          {fmt(salary.low, salary.currency)} – {fmt(salary.high, salary.currency)}
+          <span className="opacity-70">/ {salary.period}</span>
+        </div>
+      )}
+
         <button onClick={onPick} className="block text-left w-full">
           <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{job.snippet}</p>
         </button>
