@@ -59,6 +59,8 @@ function Page() {
   const runListShortlist = useServerFn(listShortlist);
   const runAddShortlist = useServerFn(addToShortlist);
   const runRemoveShortlist = useServerFn(removeFromShortlist);
+  const runEstimateSalaries = useServerFn(estimateSalaries);
+
 
   const { data: cvData } = useQuery({
     queryKey: ["base-cv"],
