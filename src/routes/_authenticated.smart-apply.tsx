@@ -36,8 +36,11 @@ import {
   listShortlist,
   addToShortlist,
   removeFromShortlist,
+  estimateSalaries,
   type JobHit,
+  type SalaryEstimate,
 } from "@/lib/smart-apply.functions";
+
 
 export const Route = createFileRoute("/_authenticated/smart-apply")({
   head: () => ({ meta: [{ title: "Smart Apply — NextCareer" }] }),
