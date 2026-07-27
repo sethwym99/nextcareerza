@@ -131,6 +131,84 @@ export const searchJobs = createServerFn({ method: "POST" })
     return { jobs };
   });
 
+// ---------- Batch salary estimates for search results ----------
+const salaryEstimateSchema = z.object({
+  estimates: z.array(
+    z.object({
+      id: z.string(),
+      low: z.number().default(0),
+      high: z.number().default(0),
+      currency: z.string().default("USD"),
+      period: z.enum(["year", "month", "hour"]).default("year"),
+      confidence: z.enum(["low", "medium", "high"]).default("low"),
+    }),
+  ),
+});
+
+export type SalaryEstimate = z.infer<typeof salaryEstimateSchema>["estimates"][number];
+
+export const estimateSalaries = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        seniority: z.string().max(40).default(""),
+        location: z.string().max(120).default(""),
+        jobs: z
+          .array(
+            z.object({
+              id: z.string(),
+              title: z.string(),
+              company: z.string().default(""),
+              location: z.string().default(""),
+            }),
+          )
+          .min(1)
+          .max(30),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await enforcePremium(context.supabase, context.userId);
+    const gateway = getGateway();
+
+    const list = data.jobs
+      .map(
+        (j, i) =>
+          `${i + 1}. id=${j.id} | ${j.title}${j.company ? ` @ ${j.company}` : ""}${j.location ? ` — ${j.location}` : ""}`,
+      )
+      .join("\n");
+
+    try {
+      const { object } = await generateObject({
+        model: gateway(MODEL),
+        schema: salaryEstimateSchema,
+        maxRetries: 2,
+        system:
+          "You estimate realistic annual salary ranges for job postings using market data. Consider role, seniority, and location (currency should match the location's local currency — ZAR for South Africa, GBP for UK, EUR for EU, USD default). Return ONE estimate per input id, preserving the exact id string. Use confidence 'low' when signal is thin, 'high' when role+location are clear. Ranges are annual gross.",
+        prompt: `Seniority: ${data.seniority || "unspecified"}\nSearch location: ${data.location || "unspecified"}\n\nJobs:\n${list}`,
+      });
+      const byId = new Map(object.estimates.map((e) => [e.id, e]));
+      return {
+        estimates: data.jobs.map(
+          (j) =>
+            byId.get(j.id) ?? {
+              id: j.id,
+              low: 0,
+              high: 0,
+              currency: "USD",
+              period: "year" as const,
+              confidence: "low" as const,
+            },
+        ),
+      };
+    } catch (e: any) {
+      console.error("[smart-apply] salary estimate failed", e);
+      return { estimates: [] as SalaryEstimate[] };
+    }
+  });
+
+
 // ---------- Tailor for a chosen job ----------
 const packSchema = z.object({
   matchScore: z.number().int().min(0).max(100),
