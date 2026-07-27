@@ -135,10 +135,34 @@ function Page() {
       setJobs(out);
       setSelected(null);
       setResult(null);
-      if (out.length === 0) toast.info("No jobs found. Try a broader role or location.");
+      setSalaryMap({});
+      if (out.length === 0) {
+        toast.info("No jobs found. Try a broader role or location.");
+        return;
+      }
+      // Fire-and-forget salary estimates
+      runEstimateSalaries({
+        data: {
+          seniority: seniority.trim(),
+          location: location.trim(),
+          jobs: out.map((j) => ({
+            id: j.id,
+            title: j.title,
+            company: j.company,
+            location: j.location,
+          })),
+        },
+      })
+        .then((r) => {
+          const map: Record<string, SalaryEstimate> = {};
+          for (const e of r.estimates) map[e.id] = e;
+          setSalaryMap(map);
+        })
+        .catch(() => {});
     },
     onError: (e: any) => toast.error(e.message ?? "Search failed"),
   });
+
 
   const tailorMut = useMutation({
     mutationFn: async (job: JobHit) => {
