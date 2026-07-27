@@ -82,6 +82,8 @@ function Page() {
   const [jobs, setJobs] = useState<JobHit[] | null>(null);
   const [selected, setSelected] = useState<JobHit | null>(null);
   const [result, setResult] = useState<TailorResult | null>(null);
+  const [salaryMap, setSalaryMap] = useState<Record<string, SalaryEstimate>>({});
+
 
   const shortlistMut = useMutation({
     mutationFn: async (job: JobHit) => {
