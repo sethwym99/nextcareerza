@@ -611,7 +611,7 @@ function JobCard({
           <span className="opacity-70">/ {salary.period}</span>
         </div>
       )}
-
+      {job.snippet && (
         <button onClick={onPick} className="block text-left w-full">
           <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{job.snippet}</p>
         </button>
