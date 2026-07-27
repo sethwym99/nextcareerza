@@ -565,12 +565,14 @@ function JobCard({
   job,
   active,
   shortlisted,
+  salary,
   onPick,
   onToggleShortlist,
 }: {
   job: JobHit;
   active: boolean;
   shortlisted: boolean;
+  salary?: SalaryEstimate;
   onPick: () => void;
   onToggleShortlist: () => void;
 }) {
