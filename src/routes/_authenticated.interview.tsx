@@ -3,10 +3,6 @@ import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { saveInterviewSession } from "@/lib/interview-sessions.functions";
-import {
-  requestInterviewPermissions,
-  openAppSettings,
-} from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +12,6 @@ import {
   VideoOff,
   AlertTriangle,
   Trophy,
-  Settings,
 } from "lucide-react";
 import { InterviewerAvatar } from "@/components/interview/InterviewerAvatar";
 import { InterviewTabs } from "@/components/interview/InterviewTabs";
