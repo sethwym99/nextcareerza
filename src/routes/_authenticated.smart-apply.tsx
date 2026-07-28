@@ -62,6 +62,7 @@ function Page() {
   const runAddShortlist = useServerFn(addToShortlist);
   const runRemoveShortlist = useServerFn(removeFromShortlist);
   const runEstimateSalaries = useServerFn(estimateSalaries);
+  const runEstimateMatchScores = useServerFn(estimateMatchScores);
 
 
   const { data: cvData } = useQuery({
@@ -85,6 +86,7 @@ function Page() {
   const [selected, setSelected] = useState<JobHit | null>(null);
   const [result, setResult] = useState<TailorResult | null>(null);
   const [salaryMap, setSalaryMap] = useState<Record<string, SalaryEstimate>>({});
+  const [matchMap, setMatchMap] = useState<Record<string, MatchScoreEstimate>>({});
 
 
   const shortlistMut = useMutation({
@@ -138,6 +140,7 @@ function Page() {
       setSelected(null);
       setResult(null);
       setSalaryMap({});
+      setMatchMap({});
       if (out.length === 0) {
         toast.info("No jobs found. Try a broader role or location.");
         return;
@@ -161,6 +164,28 @@ function Page() {
           setSalaryMap(map);
         })
         .catch(() => {});
+
+      // Fire-and-forget match score estimates (requires CV)
+      if (cvText && cvText.length >= 40) {
+        runEstimateMatchScores({
+          data: {
+            cvText,
+            jobs: out.map((j) => ({
+              id: j.id,
+              title: j.title,
+              company: j.company,
+              location: j.location,
+              snippet: j.snippet,
+            })),
+          },
+        })
+          .then((r) => {
+            const map: Record<string, MatchScoreEstimate> = {};
+            for (const s of r.scores) map[s.id] = s;
+            setMatchMap(map);
+          })
+          .catch(() => {});
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Search failed"),
   });
