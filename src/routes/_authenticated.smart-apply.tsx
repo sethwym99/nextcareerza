@@ -37,8 +37,10 @@ import {
   addToShortlist,
   removeFromShortlist,
   estimateSalaries,
+  estimateMatchScores,
   type JobHit,
   type SalaryEstimate,
+  type MatchScoreEstimate,
 } from "@/lib/smart-apply.functions";
 
 
