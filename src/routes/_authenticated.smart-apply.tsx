@@ -366,6 +366,7 @@ function Page() {
                 active={selected?.id === j.id}
                 shortlisted={shortlistUrls.has(j.url)}
                 salary={salaryMap[j.id]}
+                match={matchMap[j.id]}
                 onPick={() => pick(j)}
                 onToggleShortlist={() => shortlistMut.mutate(j)}
               />
