@@ -208,6 +208,81 @@ export const estimateSalaries = createServerFn({ method: "POST" })
     }
   });
 
+// ---------- Batch match-score estimates against candidate CV ----------
+const matchScoreSchema = z.object({
+  scores: z.array(
+    z.object({
+      id: z.string(),
+      score: z.number().int().min(0).max(100).default(0),
+      matched: z.array(z.string()).default([]),
+      missing: z.array(z.string()).default([]),
+    }),
+  ),
+});
+
+export type MatchScoreEstimate = z.infer<typeof matchScoreSchema>["scores"][number];
+
+export const estimateMatchScores = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        cvText: z.string().min(20).max(20000),
+        jobs: z
+          .array(
+            z.object({
+              id: z.string(),
+              title: z.string(),
+              company: z.string().default(""),
+              location: z.string().default(""),
+              snippet: z.string().default(""),
+            }),
+          )
+          .min(1)
+          .max(30),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await enforcePremium(context.supabase, context.userId);
+    const gateway = getGateway();
+
+    const list = data.jobs
+      .map(
+        (j, i) =>
+          `${i + 1}. id=${j.id}\nTitle: ${j.title}${j.company ? ` @ ${j.company}` : ""}${j.location ? ` — ${j.location}` : ""}\nSnippet: ${(j.snippet || "").slice(0, 500)}`,
+      )
+      .join("\n\n");
+
+    try {
+      const { object } = await generateObject({
+        model: gateway(MODEL),
+        schema: matchScoreSchema,
+        maxRetries: 2,
+        system:
+          "You rate how well a candidate's CV fits each job posting. Return ONE score per input id (preserve the exact id string). score is 0-100, be honest and calibrated: 80+ strong fit, 60-79 decent fit with gaps, 40-59 partial fit, <40 weak fit. Provide up to 5 matched skills/keywords the CV covers and up to 5 missing ones the job requires.",
+        prompt: `CANDIDATE CV:\n${data.cvText.slice(0, 8000)}\n\nJOBS:\n${list}`,
+      });
+      const byId = new Map(object.scores.map((s) => [s.id, s]));
+      return {
+        scores: data.jobs.map(
+          (j) =>
+            byId.get(j.id) ?? {
+              id: j.id,
+              score: 0,
+              matched: [] as string[],
+              missing: [] as string[],
+            },
+        ),
+      };
+    } catch (e: any) {
+      console.error("[smart-apply] match score failed", e);
+      return { scores: [] as MatchScoreEstimate[] };
+    }
+  });
+
+
+
 
 // ---------- Tailor for a chosen job ----------
 const packSchema = z.object({
