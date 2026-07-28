@@ -37,8 +37,10 @@ import {
   addToShortlist,
   removeFromShortlist,
   estimateSalaries,
+  estimateMatchScores,
   type JobHit,
   type SalaryEstimate,
+  type MatchScoreEstimate,
 } from "@/lib/smart-apply.functions";
 
 
@@ -60,6 +62,7 @@ function Page() {
   const runAddShortlist = useServerFn(addToShortlist);
   const runRemoveShortlist = useServerFn(removeFromShortlist);
   const runEstimateSalaries = useServerFn(estimateSalaries);
+  const runEstimateMatchScores = useServerFn(estimateMatchScores);
 
 
   const { data: cvData } = useQuery({
@@ -83,6 +86,7 @@ function Page() {
   const [selected, setSelected] = useState<JobHit | null>(null);
   const [result, setResult] = useState<TailorResult | null>(null);
   const [salaryMap, setSalaryMap] = useState<Record<string, SalaryEstimate>>({});
+  const [matchMap, setMatchMap] = useState<Record<string, MatchScoreEstimate>>({});
 
 
   const shortlistMut = useMutation({
@@ -136,6 +140,7 @@ function Page() {
       setSelected(null);
       setResult(null);
       setSalaryMap({});
+      setMatchMap({});
       if (out.length === 0) {
         toast.info("No jobs found. Try a broader role or location.");
         return;
@@ -159,6 +164,28 @@ function Page() {
           setSalaryMap(map);
         })
         .catch(() => {});
+
+      // Fire-and-forget match score estimates (requires CV)
+      if (cvText && cvText.length >= 40) {
+        runEstimateMatchScores({
+          data: {
+            cvText,
+            jobs: out.map((j) => ({
+              id: j.id,
+              title: j.title,
+              company: j.company,
+              location: j.location,
+              snippet: j.snippet,
+            })),
+          },
+        })
+          .then((r) => {
+            const map: Record<string, MatchScoreEstimate> = {};
+            for (const s of r.scores) map[s.id] = s;
+            setMatchMap(map);
+          })
+          .catch(() => {});
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Search failed"),
   });
@@ -339,6 +366,7 @@ function Page() {
                 active={selected?.id === j.id}
                 shortlisted={shortlistUrls.has(j.url)}
                 salary={salaryMap[j.id]}
+                match={matchMap[j.id]}
                 onPick={() => pick(j)}
                 onToggleShortlist={() => shortlistMut.mutate(j)}
               />
@@ -566,6 +594,7 @@ function JobCard({
   active,
   shortlisted,
   salary,
+  match,
   onPick,
   onToggleShortlist,
 }: {
@@ -573,9 +602,19 @@ function JobCard({
   active: boolean;
   shortlisted: boolean;
   salary?: SalaryEstimate;
+  match?: MatchScoreEstimate;
   onPick: () => void;
   onToggleShortlist: () => void;
 }) {
+  const score = match?.score ?? null;
+  const scoreTone =
+    score === null
+      ? ""
+      : score >= 75
+        ? "bg-success/15 text-success border-success/30"
+        : score >= 50
+          ? "bg-warning/15 text-warning border-warning/30"
+          : "bg-destructive/15 text-destructive border-destructive/30";
   return (
     <div
       className={`w-full text-left glass-card rounded-2xl p-4 transition border ${
@@ -589,20 +628,31 @@ function JobCard({
             {job.company} {job.location && `· ${job.location}`}
           </div>
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleShortlist();
-          }}
-          className="shrink-0 p-1 rounded-md hover:bg-secondary/60"
-          title={shortlisted ? "Remove from shortlist" : "Add to shortlist"}
-        >
-          {shortlisted ? (
-            <BookmarkCheck className="h-4 w-4 text-primary-glow" />
-          ) : (
-            <Bookmark className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {score !== null && (
+            <span
+              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${scoreTone}`}
+              title="AI match score vs your CV"
+            >
+              <Target className="h-3 w-3 inline mr-1 -mt-0.5" />
+              {score}%
+            </span>
           )}
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleShortlist();
+            }}
+            className="p-1 rounded-md hover:bg-secondary/60"
+            title={shortlisted ? "Remove from shortlist" : "Add to shortlist"}
+          >
+            {shortlisted ? (
+              <BookmarkCheck className="h-4 w-4 text-primary-glow" />
+            ) : (
+              <Bookmark className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+        </div>
       </div>
       {salary && salary.high > 0 && (
         <div className="mt-2 inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/30">
@@ -611,6 +661,7 @@ function JobCard({
           <span className="opacity-70">/ {salary.period}</span>
         </div>
       )}
+
       {job.snippet && (
         <button onClick={onPick} className="block text-left w-full">
           <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{job.snippet}</p>
