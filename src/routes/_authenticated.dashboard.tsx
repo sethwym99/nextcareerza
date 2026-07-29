@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getUsageStatus } from "@/lib/ai.functions";
+import { getProfile } from "@/lib/profile.functions";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
-  Crown, Sparkles, Wand2,
+  Crown, Sparkles, Wand2, CheckCircle2, Circle, ArrowRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -32,13 +33,22 @@ function greeting() {
 
 function Dashboard() {
   const fn = useServerFn(getUsageStatus);
+  const getProfileFn = useServerFn(getProfile);
   const { data } = useQuery({ queryKey: ["usage"], queryFn: () => fn({ data: undefined as any }) });
+  const { data: fullProfile } = useQuery({ queryKey: ["profile"], queryFn: () => getProfileFn() });
   const profile: any = data?.profile;
   const isPremium = profile?.plan === "premium";
   const first = profile?.full_name?.split(" ")[0];
   const cv = data?.counts.cv_analysis ?? 0;
   const interview = data?.counts.interview_session ?? 0;
   const limit = data?.freeLimit ?? 3;
+
+  const hasCv = !!(fullProfile?.baseCv && fullProfile.baseCv.trim().length > 40);
+  const hasTargetRole = !!(fullProfile?.targetRole && fullProfile.targetRole.trim().length > 1);
+  const didInterview = interview > 0;
+  const stepsDone = [hasCv, hasTargetRole, didInterview].filter(Boolean).length;
+  const showGettingStarted = stepsDone < 3;
+
 
   return (
     <div className="space-y-6">
@@ -67,7 +77,31 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Getting started checklist */}
+      {showGettingStarted && (
+        <section className="glass-card rounded-2xl p-4 border border-primary/30">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary-glow" /> Get set up
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Finish these to unlock the best of NextCareer.</p>
+            </div>
+            <div className="text-xs text-muted-foreground">{stepsDone}/3</div>
+          </div>
+          <div className="h-1.5 rounded-full bg-secondary overflow-hidden mb-3">
+            <div className="h-full bg-[image:var(--gradient-primary)] transition-all" style={{ width: `${(stepsDone / 3) * 100}%` }} />
+          </div>
+          <ul className="space-y-1.5">
+            <ChecklistItem done={hasCv} to="/profile" label="Add your CV" hint="Paste it in Profile" />
+            <ChecklistItem done={hasTargetRole} to="/profile" label="Pick a target role" hint="So we can tailor everything" />
+            <ChecklistItem done={didInterview} to="/interview" label="Try a practice interview" hint="Get an AI score in ~5 mins" />
+          </ul>
+        </section>
+      )}
+
       {/* App icon grid */}
+
       <section>
         <div className="grid grid-cols-4 gap-x-3 gap-y-5">
           {apps.map((a) => {
@@ -111,6 +145,29 @@ function Dashboard() {
     </div>
   );
 }
+
+function ChecklistItem({ done, to, label, hint }: { done: boolean; to: "/profile" | "/interview"; label: string; hint: string }) {
+  return (
+    <li>
+      <Link
+        to={to}
+        className={`flex items-center gap-3 rounded-xl px-3 py-2 -mx-1 transition ${done ? "opacity-60" : "hover:bg-secondary/40 active:scale-[0.99]"}`}
+      >
+        {done ? (
+          <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+        ) : (
+          <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className={`text-sm ${done ? "line-through" : "font-medium"}`}>{label}</div>
+          {!done && <div className="text-[11px] text-muted-foreground">{hint}</div>}
+        </div>
+        {!done && <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+      </Link>
+    </li>
+  );
+}
+
 
 function UsagePill({ label, used, limit }: { label: string; used: number; limit: number }) {
   const pct = Math.min(100, (used / limit) * 100);
