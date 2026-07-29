@@ -2,9 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { getUsageStatus } from "@/lib/ai.functions";
+import { getProfile } from "@/lib/profile.functions";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
-  Crown, Sparkles, Wand2,
+  Crown, Sparkles, Wand2, CheckCircle2, Circle, ArrowRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
