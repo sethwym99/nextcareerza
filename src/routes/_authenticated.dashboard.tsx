@@ -146,6 +146,29 @@ function Dashboard() {
   );
 }
 
+function ChecklistItem({ done, to, label, hint }: { done: boolean; to: "/profile" | "/interview"; label: string; hint: string }) {
+  return (
+    <li>
+      <Link
+        to={to}
+        className={`flex items-center gap-3 rounded-xl px-3 py-2 -mx-1 transition ${done ? "opacity-60" : "hover:bg-secondary/40 active:scale-[0.99]"}`}
+      >
+        {done ? (
+          <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+        ) : (
+          <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+        )}
+        <div className="min-w-0 flex-1">
+          <div className={`text-sm ${done ? "line-through" : "font-medium"}`}>{label}</div>
+          {!done && <div className="text-[11px] text-muted-foreground">{hint}</div>}
+        </div>
+        {!done && <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+      </Link>
+    </li>
+  );
+}
+
+
 function UsagePill({ label, used, limit }: { label: string; used: number; limit: number }) {
   const pct = Math.min(100, (used / limit) * 100);
   return (
