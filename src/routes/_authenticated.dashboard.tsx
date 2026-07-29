@@ -33,13 +33,22 @@ function greeting() {
 
 function Dashboard() {
   const fn = useServerFn(getUsageStatus);
+  const getProfileFn = useServerFn(getProfile);
   const { data } = useQuery({ queryKey: ["usage"], queryFn: () => fn({ data: undefined as any }) });
+  const { data: fullProfile } = useQuery({ queryKey: ["profile"], queryFn: () => getProfileFn() });
   const profile: any = data?.profile;
   const isPremium = profile?.plan === "premium";
   const first = profile?.full_name?.split(" ")[0];
   const cv = data?.counts.cv_analysis ?? 0;
   const interview = data?.counts.interview_session ?? 0;
   const limit = data?.freeLimit ?? 3;
+
+  const hasCv = !!(fullProfile?.baseCv && fullProfile.baseCv.trim().length > 40);
+  const hasTargetRole = !!(fullProfile?.targetRole && fullProfile.targetRole.trim().length > 1);
+  const didInterview = interview > 0;
+  const stepsDone = [hasCv, hasTargetRole, didInterview].filter(Boolean).length;
+  const showGettingStarted = stepsDone < 3;
+
 
   return (
     <div className="space-y-6">
