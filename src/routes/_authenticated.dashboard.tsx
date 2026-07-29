@@ -77,7 +77,31 @@ function Dashboard() {
         </div>
       )}
 
+      {/* Getting started checklist */}
+      {showGettingStarted && (
+        <section className="glass-card rounded-2xl p-4 border border-primary/30">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary-glow" /> Get set up
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Finish these to unlock the best of NextCareer.</p>
+            </div>
+            <div className="text-xs text-muted-foreground">{stepsDone}/3</div>
+          </div>
+          <div className="h-1.5 rounded-full bg-secondary overflow-hidden mb-3">
+            <div className="h-full bg-[image:var(--gradient-primary)] transition-all" style={{ width: `${(stepsDone / 3) * 100}%` }} />
+          </div>
+          <ul className="space-y-1.5">
+            <ChecklistItem done={hasCv} to="/profile" label="Add your CV" hint="Paste it in Profile" />
+            <ChecklistItem done={hasTargetRole} to="/profile" label="Pick a target role" hint="So we can tailor everything" />
+            <ChecklistItem done={didInterview} to="/interview" label="Try a practice interview" hint="Get an AI score in ~5 mins" />
+          </ul>
+        </section>
+      )}
+
       {/* App icon grid */}
+
       <section>
         <div className="grid grid-cols-4 gap-x-3 gap-y-5">
           {apps.map((a) => {
