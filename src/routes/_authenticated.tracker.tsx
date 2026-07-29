@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ListChecks, Plus, Trash2, ExternalLink, FileText, Bell } from "lucide-react";
+import { ListChecks, Plus, Trash2, ExternalLink, FileText, Bell, Rows3, Columns3, BellRing, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
+import {
+  ensureNotificationPermission,
+  syncApplicationReminders,
+  cancelApplicationReminders,
+} from "@/lib/notifications";
+import { isNativeApp } from "@/lib/platform";
 
 export const Route = createFileRoute("/_authenticated/tracker")({
   head: () => ({ meta: [{ title: "Application Tracker — NextCareer" }] }),
@@ -39,6 +45,18 @@ function Page() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"list" | "board">("list");
+  const [notifOn, setNotifOn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!isNativeApp()) { setNotifOn(false); return; }
+    let cancelled = false;
+    (async () => {
+      const ok = await ensureNotificationPermission();
+      if (!cancelled) setNotifOn(ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const { data: apps = [] } = useQuery({
     queryKey: ["applications", user?.id],
@@ -49,6 +67,12 @@ function Page() {
       return (data ?? []) as App[];
     },
   });
+
+  // Re-sync reminders whenever apps change on native
+  useEffect(() => {
+    if (!isNativeApp() || !notifOn) return;
+    apps.forEach((a) => { void syncApplicationReminders(a); });
+  }, [apps, notifOn]);
 
   const { data: packs = [] } = useQuery({
     queryKey: ["application-packs", user?.id],
@@ -61,30 +85,46 @@ function Page() {
   });
   const packByApp = new Map<string, any>(packs.map((p: any) => [p.application_id, p]));
   const [openPack, setOpenPack] = useState<any | null>(null);
+  const [notesFor, setNotesFor] = useState<App | null>(null);
 
   const create = useMutation({
     mutationFn: async (input: Partial<App>) => {
-      const { error } = await supabase.from("applications").insert({ ...input, user_id: user!.id } as any);
+      const { data, error } = await supabase.from("applications").insert({ ...input, user_id: user!.id } as any).select().single();
       if (error) throw error;
+      return data as App;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["applications"] }); setOpen(false); toast.success("Application added"); },
+    onSuccess: (row) => {
+      qc.invalidateQueries({ queryKey: ["applications"] });
+      setOpen(false);
+      toast.success("Application added");
+      if (row) void syncApplicationReminders(row);
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Status }) => {
-      const { error } = await supabase.from("applications").update({ status }).eq("id", id);
+  const updateApp = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<App> }) => {
+      const { data, error } = await supabase.from("applications").update(patch as any).eq("id", id).select().single();
       if (error) throw error;
+      return data as App;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["applications"] }),
+    onSuccess: (row) => {
+      qc.invalidateQueries({ queryKey: ["applications"] });
+      if (row) void syncApplicationReminders(row);
+    },
   });
 
   const del = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("applications").delete().eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["applications"] }); toast.success("Deleted"); },
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ["applications"] });
+      toast.success("Deleted");
+      void cancelApplicationReminders(id);
+    },
   });
 
   const counts = STATUSES.reduce((acc, s) => ({ ...acc, [s]: apps.filter((a) => a.status === s).length }), {} as Record<Status, number>);
@@ -111,20 +151,43 @@ function Page() {
         ))}
       </div>
 
-      <Reminders apps={apps} />
+      <Reminders apps={apps} notifOn={!!notifOn} />
 
-      <div className="glass-card rounded-2xl overflow-hidden">
-        {apps.length === 0 ? (
-          <div className="p-2">
-            <EmptyState
-              icon={ListChecks}
-              title="No applications yet"
-              description="Add your first job application and we'll remind you about interviews and follow-ups."
-              actionLabel="Add application"
-              onAction={() => setOpen(true)}
-            />
+      {apps.length > 0 && (
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex rounded-full border border-border bg-secondary/30 p-1 text-xs">
+            <button
+              onClick={() => setView("list")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${view === "list" ? "bg-background text-foreground" : "text-muted-foreground"}`}
+            >
+              <Rows3 className="h-3.5 w-3.5" /> List
+            </button>
+            <button
+              onClick={() => setView("board")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition ${view === "board" ? "bg-background text-foreground" : "text-muted-foreground"}`}
+            >
+              <Columns3 className="h-3.5 w-3.5" /> Board
+            </button>
           </div>
-        ) : (
+          {isNativeApp() && (
+            <div className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+              <BellRing className="h-3 w-3" />
+              {notifOn ? "Reminders on" : "Reminders off"}
+            </div>
+          )}
+        </div>
+      )}
+
+      {apps.length === 0 ? (
+        <EmptyState
+          icon={ListChecks}
+          title="No applications yet"
+          description="Add your first job application. We'll remind you about interviews and follow-ups automatically."
+          actionLabel="Add application"
+          onAction={() => setOpen(true)}
+        />
+      ) : view === "list" ? (
+        <div className="glass-card rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-secondary/50 text-muted-foreground">
@@ -149,7 +212,7 @@ function Page() {
                     </td>
                     <td className="p-3">{a.role}</td>
                     <td className="p-3">
-                      <Select value={a.status} onValueChange={(v) => updateStatus.mutate({ id: a.id, status: v as Status })}>
+                      <Select value={a.status} onValueChange={(v) => updateApp.mutate({ id: a.id, patch: { status: v as Status } })}>
                         <SelectTrigger className={`h-7 text-xs w-32 ${statusColor[a.status]}`}><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
@@ -161,6 +224,9 @@ function Page() {
                     <td className="p-3 text-muted-foreground">{a.follow_up_date ?? "—"}</td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" title="Notes" onClick={() => setNotesFor(a)}>
+                          <StickyNote className="h-4 w-4" />
+                        </Button>
                         {packByApp.get(a.id) && (
                           <Button variant="ghost" size="icon" title="View application pack" onClick={() => setOpenPack(packByApp.get(a.id))}>
                             <FileText className="h-4 w-4 text-primary-glow" />
@@ -174,8 +240,79 @@ function Page() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {STATUSES.map((s) => (
+            <div key={s} className="glass-card rounded-2xl p-3 min-h-[160px]">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusColor[s]}`}>{s}</span>
+                <span className="text-xs text-muted-foreground">{counts[s]}</span>
+              </div>
+              <div className="space-y-2">
+                {apps.filter((a) => a.status === s).map((a) => (
+                  <div key={a.id} className="rounded-xl border border-border bg-background/40 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{a.company}</div>
+                        <div className="text-xs text-muted-foreground truncate">{a.role}</div>
+                      </div>
+                      <Select value={a.status} onValueChange={(v) => updateApp.mutate({ id: a.id, patch: { status: v as Status } })}>
+                        <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent [&>svg]:opacity-60" aria-label="Move" />
+                        <SelectContent>
+                          {STATUSES.map((x) => <SelectItem key={x} value={x} className="capitalize">{x}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(a.interview_date || a.follow_up_date) && (
+                      <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
+                        {a.interview_date && <span className="px-1.5 py-0.5 rounded-full bg-warning/15 text-warning">Interview {a.interview_date}</span>}
+                        {a.follow_up_date && <span className="px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">Follow {a.follow_up_date}</span>}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center justify-end gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setNotesFor(a)}>
+                        <StickyNote className="h-3.5 w-3.5" />
+                      </Button>
+                      {a.url && (
+                        <a href={a.url} target="_blank" rel="noopener" className="h-6 w-6 grid place-items-center text-muted-foreground hover:text-primary-glow">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => del.mutate(a.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {counts[s] === 0 && (
+                  <div className="text-[11px] text-muted-foreground text-center py-4 opacity-70">Nothing here</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Notes editor */}
+      <Dialog open={!!notesFor} onOpenChange={(v) => !v && setNotesFor(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{notesFor?.company} · {notesFor?.role}</DialogTitle>
+          </DialogHeader>
+          {notesFor && (
+            <NotesEditor
+              key={notesFor.id}
+              initial={notesFor.notes ?? ""}
+              onSave={(notes) => {
+                updateApp.mutate({ id: notesFor.id, patch: { notes } }, {
+                  onSuccess: () => { toast.success("Notes saved"); setNotesFor(null); },
+                });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!openPack} onOpenChange={(v) => !v && setOpenPack(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-auto">
@@ -209,6 +346,18 @@ function Page() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function NotesEditor({ initial, onSave }: { initial: string; onSave: (v: string) => void }) {
+  const [v, setV] = useState(initial);
+  return (
+    <div className="space-y-3">
+      <Textarea rows={8} value={v} onChange={(e) => setV(e.target.value)} placeholder="Recruiter contact, salary discussed, follow-up notes…" />
+      <DialogFooter>
+        <Button variant="hero" onClick={() => onSave(v)}>Save notes</Button>
+      </DialogFooter>
     </div>
   );
 }
@@ -249,7 +398,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
 }
 
-function Reminders({ apps }: { apps: App[] }) {
+function Reminders({ apps, notifOn }: { apps: App[]; notifOn: boolean }) {
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = apps
     .map((a) => {
@@ -266,9 +415,16 @@ function Reminders({ apps }: { apps: App[] }) {
 
   return (
     <div className="glass-card rounded-2xl p-4 border border-primary/30">
-      <div className="flex items-center gap-2 mb-3">
-        <Bell className="h-4 w-4 text-primary-glow" />
-        <h3 className="font-semibold text-sm">Reminders · next 7 days</h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-primary-glow" />
+          <h3 className="font-semibold text-sm">Reminders · next 7 days</h3>
+        </div>
+        {isNativeApp() && (
+          <span className={`text-[10px] px-2 py-0.5 rounded-full ${notifOn ? "bg-success/20 text-success" : "bg-secondary text-muted-foreground"}`}>
+            {notifOn ? "Push on" : "Push off"}
+          </span>
+        )}
       </div>
       <ul className="space-y-2">
         {upcoming.map((x, i) => {
