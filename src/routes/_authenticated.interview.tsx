@@ -666,9 +666,23 @@ function Page() {
               ))}
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Works best in Chrome/Edge on desktop.
-          </p>
+          {isNativeApp() && (
+            <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+              <p className="font-medium">Works best on Chrome/Edge.</p>
+              <p className="mt-1 text-amber-200/80">
+                For the full experience, try it on the web at{" "}
+                <a
+                  href="https://nextcareer.one"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-amber-100"
+                >
+                  nextcareer.one
+                </a>
+                .
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
