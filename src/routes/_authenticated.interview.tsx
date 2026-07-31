@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { isNativeApp } from "@/lib/platform";
 import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
