@@ -125,9 +125,13 @@ function AuthedLayout() {
             <Link to="/terms" className="hover:text-foreground">Terms</Link>
             <Link to="/support" className="hover:text-foreground">Support</Link>
           </div>
-          <Button variant="ghost" className="w-full justify-start min-h-11" onClick={() => signOut().then(() => navigate({ to: "/" }))}>
-            <LogOut className="h-4 w-4" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" className="flex-1 justify-start min-h-11" onClick={() => signOut().then(() => navigate({ to: "/" }))}>
+              <LogOut className="h-4 w-4" /> Sign out
+            </Button>
+            <ThemeToggle />
+          </div>
+
         </div>
       </aside>
 
