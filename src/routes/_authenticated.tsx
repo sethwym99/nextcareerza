@@ -2,6 +2,8 @@ import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tansta
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
+
 import { supabase } from "@/integrations/supabase/client";
 import {
   FileText, MessageSquare, Target, Mic, Map, ListChecks, LayoutDashboard, LogOut, Menu, X, Crown, Check, Wand2, MoreHorizontal, User as UserIcon,
@@ -123,9 +125,13 @@ function AuthedLayout() {
             <Link to="/terms" className="hover:text-foreground">Terms</Link>
             <Link to="/support" className="hover:text-foreground">Support</Link>
           </div>
-          <Button variant="ghost" className="w-full justify-start min-h-11" onClick={() => signOut().then(() => navigate({ to: "/" }))}>
-            <LogOut className="h-4 w-4" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" className="flex-1 justify-start min-h-11" onClick={() => signOut().then(() => navigate({ to: "/" }))}>
+              <LogOut className="h-4 w-4" /> Sign out
+            </Button>
+            <ThemeToggle />
+          </div>
+
         </div>
       </aside>
 
@@ -143,7 +149,7 @@ function AuthedLayout() {
             <img src="/logo.png" alt="NextCareer" className="h-7 w-7 rounded-lg" />
             NextCareer
           </Link>
-          <div className="w-11" />
+          <ThemeToggle className="min-h-11 min-w-11" />
         </header>
 
         <main
