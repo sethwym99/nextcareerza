@@ -73,7 +73,7 @@ function Dashboard() {
       {!isPremium && (
         <div className="grid grid-cols-2 gap-3">
           <UsagePill label="CV analyses" used={cv} limit={limit} />
-          <UsagePill label="Interviews" used={interview} limit={(data as any)?.freeLimits?.interview_session ?? 1} />
+          <UsagePill label="Interviews / month" used={interview} limit={(data as any)?.freeLimits?.interview_session ?? 1} />
         </div>
       )}
 
