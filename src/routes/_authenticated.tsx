@@ -143,7 +143,7 @@ function AuthedLayout() {
             <img src="/logo.png" alt="NextCareer" className="h-7 w-7 rounded-lg" />
             NextCareer
           </Link>
-          <div className="w-11" />
+          <ThemeToggle className="min-h-11 min-w-11" />
         </header>
 
         <main
