@@ -63,6 +63,7 @@
         "cordova-plugin-android-permissions": "^1.1.5",
         "cordova-plugin-inapp-review": "^1.1.1",
         "cordova-plugin-purchase": "^13.17.2",
+        "cordova-support-android-plugin": "^2.0.4",
         "date-fns": "^4.1.0",
         "embla-carousel-react": "^8.6.0",
         "eventsource-parser": "^3.1.0",
@@ -895,6 +896,8 @@
     "cordova-plugin-inapp-review": ["cordova-plugin-inapp-review@1.1.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cordova-plugin-inapp-review/-/cordova-plugin-inapp-review-1.1.1.tgz", {}, "sha512-uEjHMtRk6ibKAap6F7hsSlFuIkZf9zHJoF1hHLwOT/hB0WZ68Y4KY5ALyDcE8JwrwRb/gbJvTMhy/DYrUOXo1Q=="],
 
     "cordova-plugin-purchase": ["cordova-plugin-purchase@13.17.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cordova-plugin-purchase/-/cordova-plugin-purchase-13.17.2.tgz", {}, "sha512-5PWpF5CGnqdYjH4x2ULVj5fUA304Ftl/UF1wEc4+HOJmAtJeIVb9/UlnckVhAyhQDT7MIk6+YNGSctJeqZGsFQ=="],
+
+    "cordova-support-android-plugin": ["cordova-support-android-plugin@2.0.4", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/cordova-support-android-plugin/-/cordova-support-android-plugin-2.0.4.tgz", {}, "sha512-WIrCc+s9foJLc6XBZFMGLlB75Dt1rAsK9okZlW6NP5KZgxGAqdjMIgwQNiw/mMbSaauDQpacn0EDw5QY32p2HA=="],
 
     "core-js": ["core-js@3.49.0", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/core-js/-/core-js-3.49.0.tgz", {}, "sha512-es1U2+YTtzpwkxVLwAFdSpaIMyQaq0PBgm3YD1W3Qpsn1NAmO3KSgZfu+oGSWVu6NvLHoHCV/aYcsE5wiB7ALg=="],
 

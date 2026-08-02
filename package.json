@@ -70,6 +70,7 @@
     "cordova-plugin-android-permissions": "^1.1.5",
     "cordova-plugin-inapp-review": "^1.1.1",
     "cordova-plugin-purchase": "^13.17.2",
+    "cordova-support-android-plugin": "^2.0.4",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "eventsource-parser": "^3.1.0",
