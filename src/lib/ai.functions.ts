@@ -110,16 +110,38 @@ function words(text: string) {
   return Array.from(new Set(text.toLowerCase().match(/[a-z][a-z+#.-]{2,}/g) ?? []));
 }
 
-function fallbackCvReport(cvText: string) {
+type AtsSection = { name: string; original: string; rewritten: string; issues: string[] };
+type AtsReport = {
+  atsScore: number;
+  strengths: string[];
+  weaknesses: string[];
+  missingKeywords: string[];
+  improvedCv: string;
+  sections: AtsSection[];
+  formattingIssues: string[];
+  actionVerbs: { weak: string; strong: string }[];
+  readability: { wordCount: number; bulletRatio: number; suggestion: string };
+};
+
+function fallbackCvReport(cvText: string): AtsReport {
   const hasMetrics = /\d+%|\$\d+|\b\d+x\b|\b\d+\+/.test(cvText);
   const hasSections = /(experience|education|skills|summary|projects)/i.test(cvText);
   const atsScore = Math.min(88, Math.max(48, 50 + (hasSections ? 18 : 0) + (hasMetrics ? 12 : 0) + Math.min(8, Math.floor(cvText.length / 250))));
+  const wordCount = cvText.split(/\s+/).filter(Boolean).length;
   return {
     atsScore,
     strengths: ["Clear role focus", "Relevant skills are visible", "Experience is easy to scan"],
     weaknesses: ["Add measurable achievements", "Use stronger action verbs", "Include a concise professional summary"],
     missingKeywords: ["impact", "metrics", "collaboration", "stakeholders", "delivery"],
     improvedCv: `Summary\nResults-focused professional with experience delivering practical, user-centered work and collaborating across teams.\n\nExperience\n${cvText}\n\nSkills\nTechnical delivery, communication, problem solving, collaboration, project execution.\n\nATS Improvements\n- Add numbers to show impact.\n- Keep job titles, tools, and keywords close to the relevant experience.\n- Use consistent headings: Summary, Experience, Education, Skills.`,
+    sections: [],
+    formattingIssues: hasSections ? [] : ["Could not detect clear section headings", "Add clear Summary/Experience/Education/Skills headings"],
+    actionVerbs: [],
+    readability: {
+      wordCount,
+      bulletRatio: 0,
+      suggestion: "Use 3-5 bullet points per role with numbers and outcomes.",
+    },
   };
 }
 
