@@ -17,6 +17,7 @@ import {
   syncApplicationReminders,
   cancelApplicationReminders,
 } from "@/lib/notifications";
+import { requestInAppReview } from "@/lib/review-prompt";
 import { isNativeApp } from "@/lib/platform";
 
 export const Route = createFileRoute("/_authenticated/tracker")({
