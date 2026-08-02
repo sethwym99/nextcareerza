@@ -111,9 +111,11 @@ function Page() {
       if (error) throw error;
       return data as App;
     },
-    onSuccess: (row) => {
+    onSuccess: (row, variables) => {
       qc.invalidateQueries({ queryKey: ["applications"] });
       if (row) void syncApplicationReminders(row);
+      // Prompt for review when the user lands their first offer (throttled).
+      if (variables.patch.status === "offer") void requestInAppReview();
     },
   });
 
