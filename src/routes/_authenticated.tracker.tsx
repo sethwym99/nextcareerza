@@ -99,6 +99,8 @@ function Page() {
       setOpen(false);
       toast.success("Application added");
       if (row) void syncApplicationReminders(row);
+      // Prompt for review after the 3rd application (throttled).
+      if (apps.length >= 2) void requestInAppReview();
     },
     onError: (e: any) => toast.error(e.message),
   });
