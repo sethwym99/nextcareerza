@@ -110,8 +110,8 @@ function words(text: string) {
   return Array.from(new Set(text.toLowerCase().match(/[a-z][a-z+#.-]{2,}/g) ?? []));
 }
 
-type AtsSection = { name: string; original: string; rewritten: string; issues: string[] };
-type AtsReport = {
+export type AtsSection = { name: string; original: string; rewritten: string; issues: string[] };
+export type AtsReport = {
   atsScore: number;
   strengths: string[];
   weaknesses: string[];
