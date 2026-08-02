@@ -175,12 +175,35 @@ export const analyzeCv = createServerFn({ method: "POST" })
     const { text } = await callModel({
       model: gateway(MODEL),
       system:
-        "You are an expert career coach and ATS resume reviewer. Return only valid JSON with keys: atsScore number 0-100, strengths string array, weaknesses string array, missingKeywords string array, improvedCv string. Do not use markdown fences.",
+        "You are an expert ATS resume reviewer and career coach. Return ONLY valid JSON with no markdown fences.\n" +
+        "Required keys:\n" +
+        "- atsScore: number 0-100\n" +
+        "- strengths: string[] (what the CV does well)\n" +
+        "- weaknesses: string[] (specific ATS or content issues)\n" +
+        "- missingKeywords: string[] (role-agnostic keywords that improve ATS hits)\n" +
+        "- improvedCv: string (a full ATS-friendly rewrite)\n" +
+        "- sections: array of {name, original, rewritten, issues} — identify 3-6 real sections from the CV (Summary, Experience, Education, Skills, Projects, etc.). For each, include the original snippet, a stronger rewritten version, and 1-3 specific issues.\n" +
+        "- formattingIssues: string[] (e.g. inconsistent dates, missing headings, tables/images, too many fonts)\n" +
+        "- actionVerbs: array of {weak, strong} — up to 5 weak verbs found and their stronger replacements\n" +
+        "- readability: {wordCount: number, bulletRatio: number 0-1, suggestion: string}\n" +
+        "Be specific, concise, and actionable.",
       prompt: `Analyze this CV and produce the JSON report.\n\nCV:\n${data.cvText}`,
     });
     await safeLogUsage(context.supabase, context.userId, "cv_analysis");
-    const parsed = parseJsonObject<ReturnType<typeof fallbackCvReport>>(text);
-    return parsed ?? fallbackCvReport(data.cvText);
+    const parsed = parseJsonObject<AtsReport>(text);
+    const report = parsed ?? fallbackCvReport(data.cvText);
+    // Ensure all new keys exist even if the model omitted them.
+    if (!report.sections) report.sections = [];
+    if (!report.formattingIssues) report.formattingIssues = [];
+    if (!report.actionVerbs) report.actionVerbs = [];
+    if (!report.readability) {
+      report.readability = {
+        wordCount: data.cvText.split(/\s+/).filter(Boolean).length,
+        bulletRatio: 0,
+        suggestion: "Use 3-5 bullet points per role with numbers and outcomes.",
+      };
+    }
+    return report;
   });
 
 // ---------- Cover Letter ----------
