@@ -3,7 +3,7 @@ import { isNativeApp } from "@/lib/platform";
 import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
-import { saveInterviewSession } from "@/lib/interview-sunnels.functions";
+import { saveInterviewSession } from "@/lib/interview-sessions.functions";
 import { requestInAppReview } from "@/lib/review-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
