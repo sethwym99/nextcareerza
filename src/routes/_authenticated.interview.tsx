@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { startInterviewSession, interviewTurn } from "@/lib/ai.functions";
 import { saveInterviewSession } from "@/lib/interview-sessions.functions";
+import { requestInAppReview } from "@/lib/review-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -549,6 +550,8 @@ function Page() {
       } catch {
         /* non-fatal */
       }
+      // Prompt for a store review after a completed interview (throttled).
+      void requestInAppReview();
     }
     setPhase("done");
   }

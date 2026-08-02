@@ -110,16 +110,38 @@ function words(text: string) {
   return Array.from(new Set(text.toLowerCase().match(/[a-z][a-z+#.-]{2,}/g) ?? []));
 }
 
-function fallbackCvReport(cvText: string) {
+export type AtsSection = { name: string; original: string; rewritten: string; issues: string[] };
+export type AtsReport = {
+  atsScore: number;
+  strengths: string[];
+  weaknesses: string[];
+  missingKeywords: string[];
+  improvedCv: string;
+  sections: AtsSection[];
+  formattingIssues: string[];
+  actionVerbs: { weak: string; strong: string }[];
+  readability: { wordCount: number; bulletRatio: number; suggestion: string };
+};
+
+function fallbackCvReport(cvText: string): AtsReport {
   const hasMetrics = /\d+%|\$\d+|\b\d+x\b|\b\d+\+/.test(cvText);
   const hasSections = /(experience|education|skills|summary|projects)/i.test(cvText);
   const atsScore = Math.min(88, Math.max(48, 50 + (hasSections ? 18 : 0) + (hasMetrics ? 12 : 0) + Math.min(8, Math.floor(cvText.length / 250))));
+  const wordCount = cvText.split(/\s+/).filter(Boolean).length;
   return {
     atsScore,
     strengths: ["Clear role focus", "Relevant skills are visible", "Experience is easy to scan"],
     weaknesses: ["Add measurable achievements", "Use stronger action verbs", "Include a concise professional summary"],
     missingKeywords: ["impact", "metrics", "collaboration", "stakeholders", "delivery"],
     improvedCv: `Summary\nResults-focused professional with experience delivering practical, user-centered work and collaborating across teams.\n\nExperience\n${cvText}\n\nSkills\nTechnical delivery, communication, problem solving, collaboration, project execution.\n\nATS Improvements\n- Add numbers to show impact.\n- Keep job titles, tools, and keywords close to the relevant experience.\n- Use consistent headings: Summary, Experience, Education, Skills.`,
+    sections: [],
+    formattingIssues: hasSections ? [] : ["Could not detect clear section headings", "Add clear Summary/Experience/Education/Skills headings"],
+    actionVerbs: [],
+    readability: {
+      wordCount,
+      bulletRatio: 0,
+      suggestion: "Use 3-5 bullet points per role with numbers and outcomes.",
+    },
   };
 }
 
@@ -153,12 +175,35 @@ export const analyzeCv = createServerFn({ method: "POST" })
     const { text } = await callModel({
       model: gateway(MODEL),
       system:
-        "You are an expert career coach and ATS resume reviewer. Return only valid JSON with keys: atsScore number 0-100, strengths string array, weaknesses string array, missingKeywords string array, improvedCv string. Do not use markdown fences.",
+        "You are an expert ATS resume reviewer and career coach. Return ONLY valid JSON with no markdown fences.\n" +
+        "Required keys:\n" +
+        "- atsScore: number 0-100\n" +
+        "- strengths: string[] (what the CV does well)\n" +
+        "- weaknesses: string[] (specific ATS or content issues)\n" +
+        "- missingKeywords: string[] (role-agnostic keywords that improve ATS hits)\n" +
+        "- improvedCv: string (a full ATS-friendly rewrite)\n" +
+        "- sections: array of {name, original, rewritten, issues} — identify 3-6 real sections from the CV (Summary, Experience, Education, Skills, Projects, etc.). For each, include the original snippet, a stronger rewritten version, and 1-3 specific issues.\n" +
+        "- formattingIssues: string[] (e.g. inconsistent dates, missing headings, tables/images, too many fonts)\n" +
+        "- actionVerbs: array of {weak, strong} — up to 5 weak verbs found and their stronger replacements\n" +
+        "- readability: {wordCount: number, bulletRatio: number 0-1, suggestion: string}\n" +
+        "Be specific, concise, and actionable.",
       prompt: `Analyze this CV and produce the JSON report.\n\nCV:\n${data.cvText}`,
     });
     await safeLogUsage(context.supabase, context.userId, "cv_analysis");
-    const parsed = parseJsonObject<ReturnType<typeof fallbackCvReport>>(text);
-    return parsed ?? fallbackCvReport(data.cvText);
+    const parsed = parseJsonObject<AtsReport>(text);
+    const report = parsed ?? fallbackCvReport(data.cvText);
+    // Ensure all new keys exist even if the model omitted them.
+    if (!report.sections) report.sections = [];
+    if (!report.formattingIssues) report.formattingIssues = [];
+    if (!report.actionVerbs) report.actionVerbs = [];
+    if (!report.readability) {
+      report.readability = {
+        wordCount: data.cvText.split(/\s+/).filter(Boolean).length,
+        bulletRatio: 0,
+        suggestion: "Use 3-5 bullet points per role with numbers and outcomes.",
+      };
+    }
+    return report;
   });
 
 // ---------- Cover Letter ----------
