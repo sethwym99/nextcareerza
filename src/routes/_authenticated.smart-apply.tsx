@@ -606,7 +606,7 @@ function Page() {
                   </div>
                 </div>
                 <button
-                  onClick={() => toggleSearchMut.mutate(s.id)}
+                  onClick={() => toggleSearchMut.mutate({ id: s.id, isActive: !s.is_active })}
                   className={`text-xs px-2 py-0.5 rounded-full border ${s.is_active ? "bg-success/20 border-success/60 text-success" : "bg-muted border-border text-muted-foreground"}`}
                 >
                   {s.is_active ? "On" : "Off"}
