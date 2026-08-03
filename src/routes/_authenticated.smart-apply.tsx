@@ -437,29 +437,72 @@ function Page() {
 
       {/* Search bar */}
       {tab === "search" && (
-        <div className="glass-card rounded-2xl p-4 grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2">
-          <Input
-            placeholder="Role (e.g. Frontend Developer)"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
-          />
-          <Input
-            placeholder="Location (optional)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
-          />
-          <Input
-            placeholder="Seniority"
-            value={seniority}
-            onChange={(e) => setSeniority(e.target.value)}
-            className="sm:w-32"
-          />
-          <Button variant="hero" onClick={() => searchMut.mutate()} disabled={!canSearch}>
-            {searchMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Search
-          </Button>
+        <div className="space-y-2">
+          <div className="glass-card rounded-2xl p-4 grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2">
+            <Input
+              placeholder="Role (e.g. Frontend Developer)"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
+            />
+            <Input
+              placeholder="Location (optional)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
+            />
+            <Input
+              placeholder="Seniority"
+              value={seniority}
+              onChange={(e) => setSeniority(e.target.value)}
+              className="sm:w-32"
+            />
+            <Button variant="hero" onClick={() => searchMut.mutate()} disabled={!canSearch}>
+              {searchMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Search
+            </Button>
+          </div>
+          {alertOpen ? (
+            <div className="glass-card rounded-2xl p-3 flex flex-wrap items-center gap-2">
+              <BellRing className="h-4 w-4 text-primary-glow" />
+              <span className="text-sm">Save alert for</span>
+              <span className="text-sm font-semibold truncate max-w-[12rem]">
+                {role.trim() || "this search"}
+              </span>
+              <select
+                value={alertFrequency}
+                onChange={(e) => setAlertFrequency(e.target.value as "daily" | "weekly")}
+                className="text-sm bg-secondary rounded-md px-2 py-1 border border-border"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+              <div className="flex-1" />
+              <Button size="sm" variant="ghost" onClick={() => setAlertOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="hero"
+                onClick={() => saveSearchMut.mutate()}
+                disabled={!role.trim() || saveSearchMut.isPending}
+              >
+                {saveSearchMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Save
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAlertOpen(true)}
+                disabled={!role.trim()}
+              >
+                <Bell className="h-3.5 w-3.5 mr-1" /> Save alert
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
