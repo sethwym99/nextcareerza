@@ -413,8 +413,8 @@ function Page() {
         )}
       </div>
 
-      {/* Tabs: Search / Shortlist */}
-      <div className="flex gap-2">
+      {/* Tabs: Search / Shortlist / Alerts */}
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setTab("search")}
           className={`text-xs px-3 py-1.5 rounded-full border ${tab === "search" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
@@ -426,6 +426,12 @@ function Page() {
           className={`text-xs px-3 py-1.5 rounded-full border ${tab === "shortlist" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
         >
           <Bookmark className="h-3 w-3 inline mr-1" /> Shortlist ({shortlistData?.jobs?.length ?? 0})
+        </button>
+        <button
+          onClick={() => setTab("alerts")}
+          className={`text-xs px-3 py-1.5 rounded-full border ${tab === "alerts" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
+        >
+          <Bell className="h-3 w-3 inline mr-1" /> Alerts ({savedSearches.length})
         </button>
       </div>
 
