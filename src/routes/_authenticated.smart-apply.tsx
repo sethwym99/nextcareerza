@@ -29,6 +29,7 @@ import {
   BellRing,
   Play,
   Mail,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
