@@ -706,15 +706,24 @@ function ResultPanel({
             <div className="text-sm text-muted-foreground mt-2">Not enough data.</div>
           )}
         </div>
-        <div className="glass-card rounded-2xl p-4 flex flex-col">
-          <div className="text-xs text-muted-foreground">Save</div>
-          <Button variant="hero" size="sm" className="mt-auto" onClick={onSave} disabled={saving}>
+        <div className="glass-card rounded-2xl p-4 flex flex-col gap-2">
+          <div className="text-xs text-muted-foreground">Actions</div>
+          <Button variant="hero" size="sm" onClick={onSave} disabled={saving}>
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
             Save pack
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onTrack}
+            disabled={tracking}
+          >
+            {tracking ? <Loader2 className="h-4 w-4 animate-spin" /> : <ListChecks className="h-4 w-4" />}
+            Track
           </Button>
         </div>
       </div>
