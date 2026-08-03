@@ -755,6 +755,13 @@ function ResultPanel({
         <TabsContent value="letter" className="mt-3">
           <CopyBlock text={result.coverLetter} />
         </TabsContent>
+        <TabsContent value="email" className="mt-3">
+          {result.outreachEmail ? (
+            <CopyBlock text={result.outreachEmail} />
+          ) : (
+            <div className="text-sm text-muted-foreground">No outreach email generated.</div>
+          )}
+        </TabsContent>
         <TabsContent value="reco" className="mt-3">
           <ul className="space-y-2 text-sm">
             {result.recommendations.map((r, i) => (
