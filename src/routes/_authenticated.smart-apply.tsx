@@ -744,6 +744,9 @@ function ResultPanel({
           <TabsTrigger value="letter">
             <MessageSquare className="h-3.5 w-3.5" /> Cover letter
           </TabsTrigger>
+          <TabsTrigger value="email">
+            <Mail className="h-3.5 w-3.5" /> Outreach
+          </TabsTrigger>
           <TabsTrigger value="reco">Tips</TabsTrigger>
         </TabsList>
         <TabsContent value="cv" className="mt-3">
