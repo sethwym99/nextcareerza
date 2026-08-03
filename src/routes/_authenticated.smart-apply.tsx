@@ -42,6 +42,7 @@ import {
   removeFromShortlist,
   estimateSalaries,
   estimateMatchScores,
+  trackApplication,
   type JobHit,
   type SalaryEstimate,
   type MatchScoreEstimate,
