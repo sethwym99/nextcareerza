@@ -585,9 +585,9 @@ function Page() {
                 </div>
                 <button
                   onClick={() => toggleSearchMut.mutate(s.id)}
-                  className={`text-xs px-2 py-0.5 rounded-full border ${s.active ? "bg-success/20 border-success/60 text-success" : "bg-muted border-border text-muted-foreground"}`}
+                  className={`text-xs px-2 py-0.5 rounded-full border ${s.is_active ? "bg-success/20 border-success/60 text-success" : "bg-muted border-border text-muted-foreground"}`}
                 >
-                  {s.active ? "On" : "Off"}
+                  {s.is_active ? "On" : "Off"}
                 </button>
               </div>
               <div className="flex gap-2">
