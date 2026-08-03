@@ -25,6 +25,7 @@ const nav = [
   { to: "/interview" as const, label: "Interview", icon: Mic },
   { to: "/roadmap" as const, label: "Roadmap", icon: Map },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks },
+  { to: "/analytics" as const, label: "Analytics", icon: BarChart3 },
   { to: "/profile" as const, label: "Profile", icon: UserIcon },
 ];
 
