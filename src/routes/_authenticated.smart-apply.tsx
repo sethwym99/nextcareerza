@@ -222,7 +222,7 @@ function Page() {
   });
 
   const toggleSearchMut = useMutation({
-    mutationFn: (id: string) => runToggleSearch({ data: { id } }),
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => runToggleSearch({ data: { id, isActive } }),
     onSuccess: async () => {
       const res = await runListSearches({ data: undefined as any });
       setSavedSearches(res.searches ?? []);
