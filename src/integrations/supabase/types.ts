@@ -391,6 +391,95 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_job_searches: {
+        Row: {
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          location: string
+          role: string
+          seniority: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          location?: string
+          role: string
+          seniority?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          location?: string
+          role?: string
+          seniority?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      search_alerted_jobs: {
+        Row: {
+          company: string
+          created_at: string
+          id: string
+          job_url: string
+          location: string | null
+          notified: boolean
+          search_id: string
+          snippet: string | null
+          source: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string
+          id?: string
+          job_url: string
+          location?: string | null
+          notified?: boolean
+          search_id: string
+          snippet?: string | null
+          source?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string
+          id?: string
+          job_url?: string
+          location?: string | null
+          notified?: boolean
+          search_id?: string
+          snippet?: string | null
+          source?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_alerted_jobs_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_job_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shortlisted_jobs: {
         Row: {
           company: string

@@ -133,6 +133,30 @@ export async function cancelApplicationReminders(id: string): Promise<void> {
   ]);
 }
 
+export async function scheduleJobAlertNotifications(
+  alerts: { id: string; title: string; company: string }[],
+): Promise<void> {
+  const LN = await getPlugin();
+  if (!LN) return;
+  const ok = await ensureNotificationPermission();
+  if (!ok) return;
+  if (alerts.length === 0) return;
+
+  const notifications = alerts.map((a, i) => ({
+    id: notifId(a.id, "job-alert"),
+    title: `New job match: ${a.title}`,
+    body: `${a.company} — open Smart Apply to tailor your CV.`,
+    schedule: { at: new Date(Date.now() + (i + 1) * 60_000), allowWhileIdle: true },
+    smallIcon: "ic_stat_icon_config_sample",
+  }));
+
+  try {
+    await LN.schedule({ notifications });
+  } catch {
+    /* ignore */
+  }
+}
+
 function atLocalNine(iso: string): Date {
   // iso is a date-only string 'YYYY-MM-DD'
   const [y, m, d] = iso.split("-").map(Number);

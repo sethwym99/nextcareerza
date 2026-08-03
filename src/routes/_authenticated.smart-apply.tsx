@@ -25,6 +25,11 @@ import {
   Bookmark,
   BookmarkCheck,
   Trash2,
+  Bell,
+  BellRing,
+  Play,
+  Mail,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -38,10 +43,24 @@ import {
   removeFromShortlist,
   estimateSalaries,
   estimateMatchScores,
+  trackApplication,
   type JobHit,
   type SalaryEstimate,
   type MatchScoreEstimate,
 } from "@/lib/smart-apply.functions";
+import {
+  saveJobSearch,
+  listSavedSearches,
+  deleteSavedSearch,
+  toggleSavedSearch,
+  runJobSearchAlert,
+  getPendingJobAlerts,
+  markJobAlertsNotified,
+  type SavedSearch,
+  type AlertedJob,
+} from "@/lib/job-alerts.functions";
+import { scheduleJobAlertNotifications } from "@/lib/notifications";
+import { isNativeApp } from "@/lib/platform";
 
 
 export const Route = createFileRoute("/_authenticated/smart-apply")({
@@ -64,6 +83,14 @@ function Page() {
   const runEstimateSalaries = useServerFn(estimateSalaries);
   const runEstimateMatchScores = useServerFn(estimateMatchScores);
 
+  const runSaveSearch = useServerFn(saveJobSearch);
+  const runListSearches = useServerFn(listSavedSearches);
+  const runDeleteSearch = useServerFn(deleteSavedSearch);
+  const runToggleSearch = useServerFn(toggleSavedSearch);
+  const runRefreshSearch = useServerFn(runJobSearchAlert);
+  const runGetPendingAlerts = useServerFn(getPendingJobAlerts);
+  const runMarkNotified = useServerFn(markJobAlertsNotified);
+  const runTrackApplication = useServerFn(trackApplication);
 
   const { data: cvData } = useQuery({
     queryKey: ["base-cv"],
@@ -78,7 +105,7 @@ function Page() {
 
   const [cvText, setCvText] = useState("");
   const [cvOpen, setCvOpen] = useState(false);
-  const [tab, setTab] = useState<"search" | "shortlist">("search");
+  const [tab, setTab] = useState<"search" | "shortlist" | "alerts">("search");
   const [role, setRole] = useState("");
   const [location, setLocation] = useState("");
   const [seniority, setSeniority] = useState("");
@@ -87,6 +114,11 @@ function Page() {
   const [result, setResult] = useState<TailorResult | null>(null);
   const [salaryMap, setSalaryMap] = useState<Record<string, SalaryEstimate>>({});
   const [matchMap, setMatchMap] = useState<Record<string, MatchScoreEstimate>>({});
+
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [pendingAlerts, setPendingAlerts] = useState<AlertedJob[]>([]);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertFrequency, setAlertFrequency] = useState<"daily" | "weekly">("daily");
 
 
   const shortlistMut = useMutation({
@@ -119,6 +151,38 @@ function Page() {
     if (cvData?.baseCv && !cvText) setCvText(cvData.baseCv);
   }, [cvData, cvText]);
 
+  useEffect(() => {
+    let cancelled = false;
+    runListSearches({ data: undefined as any })
+      .then((res) => {
+        if (!cancelled) setSavedSearches(res.searches ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [runListSearches, tab]);
+
+  useEffect(() => {
+    let cancelled = false;
+    runGetPendingAlerts({ data: undefined as any })
+      .then((res) => {
+        if (!cancelled) setPendingAlerts(res.alerts ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [runGetPendingAlerts]);
+
+  useEffect(() => {
+    if (pendingAlerts.length === 0) return;
+    scheduleJobAlertNotifications(
+      pendingAlerts.map((a) => ({ id: a.id, title: a.title, company: a.company })),
+    ).catch(() => {});
+    runMarkNotified({ data: { ids: pendingAlerts.map((a) => a.id) } }).catch(() => {});
+  }, [pendingAlerts, runMarkNotified]);
+
   const saveCvMut = useMutation({
     mutationFn: () => saveCv({ data: { cvText } }),
     onSuccess: () => {
@@ -126,6 +190,58 @@ function Page() {
       toast.success("CV saved");
     },
     onError: (e: any) => toast.error(e.message),
+  });
+
+  const saveSearchMut = useMutation({
+    mutationFn: () =>
+      runSaveSearch({
+        data: {
+          role: role.trim(),
+          location: location.trim(),
+          seniority: seniority.trim(),
+          frequency: alertFrequency,
+        },
+      }),
+    onSuccess: async () => {
+      const res = await runListSearches({ data: undefined as any });
+      setSavedSearches(res.searches ?? []);
+      setAlertOpen(false);
+      toast.success("Job alert saved");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to save alert"),
+  });
+
+  const deleteSearchMut = useMutation({
+    mutationFn: (id: string) => runDeleteSearch({ data: { id } }),
+    onSuccess: async () => {
+      const res = await runListSearches({ data: undefined as any });
+      setSavedSearches(res.searches ?? []);
+      toast.success("Alert removed");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to remove alert"),
+  });
+
+  const toggleSearchMut = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => runToggleSearch({ data: { id, isActive } }),
+    onSuccess: async () => {
+      const res = await runListSearches({ data: undefined as any });
+      setSavedSearches(res.searches ?? []);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update alert"),
+  });
+
+  const refreshSearchMut = useMutation({
+    mutationFn: (id: string) => runRefreshSearch({ data: { id } }),
+    onSuccess: (res) => {
+      if (res.newJobs && res.newJobs.length > 0) {
+        setJobs(res.newJobs);
+        setTab("search");
+        toast.success(`Found ${res.newJobs.length} new match${res.newJobs.length === 1 ? "" : "es"}`);
+      } else {
+        toast.info("No new matches right now.");
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "Refresh failed"),
   });
 
   const searchMut = useMutation({
@@ -245,6 +361,25 @@ function Page() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const trackMut = useMutation({
+    mutationFn: async () => {
+      if (!selected) throw new Error("Select a job first");
+      return runTrackApplication({
+        data: {
+          jobUrl: selected.url,
+          company: selected.company,
+          role: selected.title,
+          location: selected.location,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Added to tracker");
+      qc.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to track"),
+  });
+
   const canSearch = role.trim().length > 1 && !searchMut.isPending;
 
   function pick(job: JobHit) {
@@ -300,8 +435,8 @@ function Page() {
         )}
       </div>
 
-      {/* Tabs: Search / Shortlist */}
-      <div className="flex gap-2">
+      {/* Tabs: Search / Shortlist / Alerts */}
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setTab("search")}
           className={`text-xs px-3 py-1.5 rounded-full border ${tab === "search" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
@@ -314,33 +449,82 @@ function Page() {
         >
           <Bookmark className="h-3 w-3 inline mr-1" /> Shortlist ({shortlistData?.jobs?.length ?? 0})
         </button>
+        <button
+          onClick={() => setTab("alerts")}
+          className={`text-xs px-3 py-1.5 rounded-full border ${tab === "alerts" ? "bg-primary/20 border-primary-glow/60" : "border-border text-muted-foreground"}`}
+        >
+          <Bell className="h-3 w-3 inline mr-1" /> Alerts ({savedSearches.length})
+        </button>
       </div>
 
       {/* Search bar */}
       {tab === "search" && (
-        <div className="glass-card rounded-2xl p-4 grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2">
-          <Input
-            placeholder="Role (e.g. Frontend Developer)"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
-          />
-          <Input
-            placeholder="Location (optional)"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
-          />
-          <Input
-            placeholder="Seniority"
-            value={seniority}
-            onChange={(e) => setSeniority(e.target.value)}
-            className="sm:w-32"
-          />
-          <Button variant="hero" onClick={() => searchMut.mutate()} disabled={!canSearch}>
-            {searchMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Search
-          </Button>
+        <div className="space-y-2">
+          <div className="glass-card rounded-2xl p-4 grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2">
+            <Input
+              placeholder="Role (e.g. Frontend Developer)"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
+            />
+            <Input
+              placeholder="Location (optional)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && canSearch && searchMut.mutate()}
+            />
+            <Input
+              placeholder="Seniority"
+              value={seniority}
+              onChange={(e) => setSeniority(e.target.value)}
+              className="sm:w-32"
+            />
+            <Button variant="hero" onClick={() => searchMut.mutate()} disabled={!canSearch}>
+              {searchMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Search
+            </Button>
+          </div>
+          {alertOpen ? (
+            <div className="glass-card rounded-2xl p-3 flex flex-wrap items-center gap-2">
+              <BellRing className="h-4 w-4 text-primary-glow" />
+              <span className="text-sm">Save alert for</span>
+              <span className="text-sm font-semibold truncate max-w-[12rem]">
+                {role.trim() || "this search"}
+              </span>
+              <select
+                value={alertFrequency}
+                onChange={(e) => setAlertFrequency(e.target.value as "daily" | "weekly")}
+                className="text-sm bg-secondary rounded-md px-2 py-1 border border-border"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+              <div className="flex-1" />
+              <Button size="sm" variant="ghost" onClick={() => setAlertOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="hero"
+                onClick={() => saveSearchMut.mutate()}
+                disabled={!role.trim() || saveSearchMut.isPending}
+              >
+                {saveSearchMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Save
+              </Button>
+            </div>
+          ) : (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAlertOpen(true)}
+                disabled={!role.trim()}
+              >
+                <Bell className="h-3.5 w-3.5 mr-1" /> Save alert
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -400,6 +584,56 @@ function Page() {
                 />
               );
             })}
+
+          {tab === "alerts" && savedSearches.length === 0 && (
+            <div className="glass-card rounded-2xl p-6 text-sm text-muted-foreground text-center">
+              <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              Save a search as an alert to get notified about new matches.
+            </div>
+          )}
+          {tab === "alerts" && savedSearches.map((s) => (
+            <div
+              key={s.id}
+              className="glass-card rounded-2xl p-4 flex flex-col gap-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-semibold text-sm">{s.role}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {s.location ? `${s.location} · ` : ""}
+                    {s.seniority ? `${s.seniority} · ` : ""}
+                    {s.frequency}
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleSearchMut.mutate({ id: s.id, isActive: !s.is_active })}
+                  className={`text-xs px-2 py-0.5 rounded-full border ${s.is_active ? "bg-success/20 border-success/60 text-success" : "bg-muted border-border text-muted-foreground"}`}
+                >
+                  {s.is_active ? "On" : "Off"}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => refreshSearchMut.mutate(s.id)}
+                  disabled={refreshSearchMut.isPending}
+                >
+                  {refreshSearchMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                  Run now
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => deleteSearchMut.mutate(s.id)}
+                  disabled={deleteSearchMut.isPending}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
 
 
@@ -422,6 +656,8 @@ function Page() {
               result={result}
               onSave={() => saveMut.mutate()}
               saving={saveMut.isPending}
+              onTrack={() => trackMut.mutate()}
+              tracking={trackMut.isPending}
             />
           )}
         </div>
@@ -434,10 +670,14 @@ function ResultPanel({
   result,
   onSave,
   saving,
+  onTrack,
+  tracking,
 }: {
   result: TailorResult;
   onSave: () => void;
   saving: boolean;
+  onTrack: () => void;
+  tracking: boolean;
 }) {
   const score = result.matchScore ?? 0;
   const scoreColor =
@@ -473,15 +713,24 @@ function ResultPanel({
             <div className="text-sm text-muted-foreground mt-2">Not enough data.</div>
           )}
         </div>
-        <div className="glass-card rounded-2xl p-4 flex flex-col">
-          <div className="text-xs text-muted-foreground">Save</div>
-          <Button variant="hero" size="sm" className="mt-auto" onClick={onSave} disabled={saving}>
+        <div className="glass-card rounded-2xl p-4 flex flex-col gap-2">
+          <div className="text-xs text-muted-foreground">Actions</div>
+          <Button variant="hero" size="sm" onClick={onSave} disabled={saving}>
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Save className="h-4 w-4" />
             )}
             Save pack
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onTrack}
+            disabled={tracking}
+          >
+            {tracking ? <Loader2 className="h-4 w-4 animate-spin" /> : <ListChecks className="h-4 w-4" />}
+            Track
           </Button>
         </div>
       </div>
@@ -532,6 +781,9 @@ function ResultPanel({
           <TabsTrigger value="letter">
             <MessageSquare className="h-3.5 w-3.5" /> Cover letter
           </TabsTrigger>
+          <TabsTrigger value="email">
+            <Mail className="h-3.5 w-3.5" /> Outreach
+          </TabsTrigger>
           <TabsTrigger value="reco">Tips</TabsTrigger>
         </TabsList>
         <TabsContent value="cv" className="mt-3">
@@ -539,6 +791,13 @@ function ResultPanel({
         </TabsContent>
         <TabsContent value="letter" className="mt-3">
           <CopyBlock text={result.coverLetter} />
+        </TabsContent>
+        <TabsContent value="email" className="mt-3">
+          {result.outreachEmail ? (
+            <CopyBlock text={result.outreachEmail} />
+          ) : (
+            <div className="text-sm text-muted-foreground">No outreach email generated.</div>
+          )}
         </TabsContent>
         <TabsContent value="reco" className="mt-3">
           <ul className="space-y-2 text-sm">

@@ -33,11 +33,13 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCvBuilderRouteImport } from './routes/_authenticated.cv-builder'
 import { Route as AuthenticatedCoverLetterRouteImport } from './routes/_authenticated.cover-letter'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated.analytics'
 import { Route as ApiPublicPlayRtdnRouteImport } from './routes/api/public/play-rtdn'
 import { Route as ApiPublicPaymentsRouteImport } from './routes/api/public/payments'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicHooksRunJobAlertsRouteImport } from './routes/api/public/hooks/run-job-alerts'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -161,6 +163,11 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const ApiPublicPlayRtdnRoute = ApiPublicPlayRtdnRouteImport.update({
   id: '/api/public/play-rtdn',
   path: '/api/public/play-rtdn',
@@ -187,6 +194,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksRunJobAlertsRoute =
+  ApiPublicHooksRunJobAlertsRouteImport.update({
+    id: '/api/public/hooks/run-job-alerts',
+    path: '/api/public/hooks/run-job-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -195,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/cover-letter': typeof AuthenticatedCoverLetterRoute
   '/cv-builder': typeof AuthenticatedCvBuilderRoute
@@ -214,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
   '/api/public/play-rtdn': typeof ApiPublicPlayRtdnRoute
+  '/api/public/hooks/run-job-alerts': typeof ApiPublicHooksRunJobAlertsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -225,6 +240,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/cover-letter': typeof AuthenticatedCoverLetterRoute
   '/cv-builder': typeof AuthenticatedCvBuilderRoute
@@ -244,6 +260,7 @@ export interface FileRoutesByTo {
   '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
   '/api/public/play-rtdn': typeof ApiPublicPlayRtdnRoute
+  '/api/public/hooks/run-job-alerts': typeof ApiPublicHooksRunJobAlertsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -257,6 +274,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/cover-letter': typeof AuthenticatedCoverLetterRoute
   '/_authenticated/cv-builder': typeof AuthenticatedCvBuilderRoute
@@ -276,6 +294,7 @@ export interface FileRoutesById {
   '/api/tts': typeof ApiTtsRoute
   '/api/public/payments': typeof ApiPublicPaymentsRoute
   '/api/public/play-rtdn': typeof ApiPublicPlayRtdnRoute
+  '/api/public/hooks/run-job-alerts': typeof ApiPublicHooksRunJobAlertsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -289,6 +308,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/support'
     | '/terms'
+    | '/analytics'
     | '/billing'
     | '/cover-letter'
     | '/cv-builder'
@@ -308,6 +328,7 @@ export interface FileRouteTypes {
     | '/api/tts'
     | '/api/public/payments'
     | '/api/public/play-rtdn'
+    | '/api/public/hooks/run-job-alerts'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -319,6 +340,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/support'
     | '/terms'
+    | '/analytics'
     | '/billing'
     | '/cover-letter'
     | '/cv-builder'
@@ -338,6 +360,7 @@ export interface FileRouteTypes {
     | '/api/tts'
     | '/api/public/payments'
     | '/api/public/play-rtdn'
+    | '/api/public/hooks/run-job-alerts'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -350,6 +373,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/support'
     | '/terms'
+    | '/_authenticated/analytics'
     | '/_authenticated/billing'
     | '/_authenticated/cover-letter'
     | '/_authenticated/cv-builder'
@@ -369,6 +393,7 @@ export interface FileRouteTypes {
     | '/api/tts'
     | '/api/public/payments'
     | '/api/public/play-rtdn'
+    | '/api/public/hooks/run-job-alerts'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -387,6 +412,7 @@ export interface RootRouteChildren {
   ApiTtsRoute: typeof ApiTtsRoute
   ApiPublicPaymentsRoute: typeof ApiPublicPaymentsRoute
   ApiPublicPlayRtdnRoute: typeof ApiPublicPlayRtdnRoute
+  ApiPublicHooksRunJobAlertsRoute: typeof ApiPublicHooksRunJobAlertsRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -562,6 +588,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/public/play-rtdn': {
       id: '/api/public/play-rtdn'
       path: '/api/public/play-rtdn'
@@ -597,10 +630,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/run-job-alerts': {
+      id: '/api/public/hooks/run-job-alerts'
+      path: '/api/public/hooks/run-job-alerts'
+      fullPath: '/api/public/hooks/run-job-alerts'
+      preLoaderRoute: typeof ApiPublicHooksRunJobAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedCoverLetterRoute: typeof AuthenticatedCoverLetterRoute
   AuthenticatedCvBuilderRoute: typeof AuthenticatedCvBuilderRoute
@@ -618,6 +659,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedCoverLetterRoute: AuthenticatedCoverLetterRoute,
   AuthenticatedCvBuilderRoute: AuthenticatedCvBuilderRoute,
@@ -651,6 +693,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTtsRoute: ApiTtsRoute,
   ApiPublicPaymentsRoute: ApiPublicPaymentsRoute,
   ApiPublicPlayRtdnRoute: ApiPublicPlayRtdnRoute,
+  ApiPublicHooksRunJobAlertsRoute: ApiPublicHooksRunJobAlertsRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
@@ -658,13 +701,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
