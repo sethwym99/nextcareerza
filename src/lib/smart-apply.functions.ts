@@ -466,3 +466,32 @@ export const getApplicationPack = createServerFn({ method: "POST" })
       .maybeSingle();
     return { pack: pack ?? null };
   });
+
+export const trackApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        jobUrl: z.string().optional(),
+        company: z.string().min(1),
+        role: z.string().min(1),
+        location: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: app, error } = await context.supabase
+      .from("applications")
+      .insert({
+        user_id: context.userId,
+        company: data.company,
+        role: data.role,
+        status: "applied",
+        applied_date: new Date().toISOString().slice(0, 10),
+        url: data.jobUrl ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { applicationId: (app as any).id };
+  });
