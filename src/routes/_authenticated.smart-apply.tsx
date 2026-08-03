@@ -668,10 +668,14 @@ function ResultPanel({
   result,
   onSave,
   saving,
+  onTrack,
+  tracking,
 }: {
   result: TailorResult;
   onSave: () => void;
   saving: boolean;
+  onTrack: () => void;
+  tracking: boolean;
 }) {
   const score = result.matchScore ?? 0;
   const scoreColor =
