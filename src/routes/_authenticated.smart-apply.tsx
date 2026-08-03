@@ -25,6 +25,10 @@ import {
   Bookmark,
   BookmarkCheck,
   Trash2,
+  Bell,
+  BellRing,
+  Play,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -42,6 +46,19 @@ import {
   type SalaryEstimate,
   type MatchScoreEstimate,
 } from "@/lib/smart-apply.functions";
+import {
+  saveJobSearch,
+  listSavedSearches,
+  deleteSavedSearch,
+  toggleSavedSearch,
+  runJobSearchAlert,
+  getPendingJobAlerts,
+  markJobAlertsNotified,
+  type SavedSearch,
+  type AlertedJob,
+} from "@/lib/job-alerts.functions";
+import { scheduleJobAlertNotifications } from "@/lib/notifications";
+import { isNativeApp } from "@/lib/platform";
 
 
 export const Route = createFileRoute("/_authenticated/smart-apply")({
@@ -64,6 +81,13 @@ function Page() {
   const runEstimateSalaries = useServerFn(estimateSalaries);
   const runEstimateMatchScores = useServerFn(estimateMatchScores);
 
+  const runSaveSearch = useServerFn(saveJobSearch);
+  const runListSearches = useServerFn(listSavedSearches);
+  const runDeleteSearch = useServerFn(deleteSavedSearch);
+  const runToggleSearch = useServerFn(toggleSavedSearch);
+  const runRefreshSearch = useServerFn(runJobSearchAlert);
+  const runGetPendingAlerts = useServerFn(getPendingJobAlerts);
+  const runMarkNotified = useServerFn(markJobAlertsNotified);
 
   const { data: cvData } = useQuery({
     queryKey: ["base-cv"],
@@ -78,7 +102,7 @@ function Page() {
 
   const [cvText, setCvText] = useState("");
   const [cvOpen, setCvOpen] = useState(false);
-  const [tab, setTab] = useState<"search" | "shortlist">("search");
+  const [tab, setTab] = useState<"search" | "shortlist" | "alerts">("search");
   const [role, setRole] = useState("");
   const [location, setLocation] = useState("");
   const [seniority, setSeniority] = useState("");
@@ -87,6 +111,11 @@ function Page() {
   const [result, setResult] = useState<TailorResult | null>(null);
   const [salaryMap, setSalaryMap] = useState<Record<string, SalaryEstimate>>({});
   const [matchMap, setMatchMap] = useState<Record<string, MatchScoreEstimate>>({});
+
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [pendingAlerts, setPendingAlerts] = useState<AlertedJob[]>([]);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertFrequency, setAlertFrequency] = useState<"daily" | "weekly">("daily");
 
 
   const shortlistMut = useMutation({
@@ -119,6 +148,38 @@ function Page() {
     if (cvData?.baseCv && !cvText) setCvText(cvData.baseCv);
   }, [cvData, cvText]);
 
+  useEffect(() => {
+    let cancelled = false;
+    runListSearches({ data: undefined as any })
+      .then((res) => {
+        if (!cancelled) setSavedSearches(res.searches ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [runListSearches, tab]);
+
+  useEffect(() => {
+    let cancelled = false;
+    runGetPendingAlerts({ data: undefined as any })
+      .then((res) => {
+        if (!cancelled) setPendingAlerts(res.alerts ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [runGetPendingAlerts]);
+
+  useEffect(() => {
+    if (pendingAlerts.length === 0) return;
+    scheduleJobAlertNotifications(
+      pendingAlerts.map((a) => ({ id: a.id, title: a.title, company: a.company })),
+    ).catch(() => {});
+    runMarkNotified({ data: { ids: pendingAlerts.map((a) => a.id) } }).catch(() => {});
+  }, [pendingAlerts, runMarkNotified]);
+
   const saveCvMut = useMutation({
     mutationFn: () => saveCv({ data: { cvText } }),
     onSuccess: () => {
@@ -126,6 +187,58 @@ function Page() {
       toast.success("CV saved");
     },
     onError: (e: any) => toast.error(e.message),
+  });
+
+  const saveSearchMut = useMutation({
+    mutationFn: () =>
+      runSaveSearch({
+        data: {
+          role: role.trim(),
+          location: location.trim(),
+          seniority: seniority.trim(),
+          frequency: alertFrequency,
+        },
+      }),
+    onSuccess: async () => {
+      const res = await runListSearches({ data: undefined as any });
+      setSavedSearches(res.searches ?? []);
+      setAlertOpen(false);
+      toast.success("Job alert saved");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to save alert"),
+  });
+
+  const deleteSearchMut = useMutation({
+    mutationFn: (id: string) => runDeleteSearch({ data: { id } }),
+    onSuccess: async () => {
+      const res = await runListSearches({ data: undefined as any });
+      setSavedSearches(res.searches ?? []);
+      toast.success("Alert removed");
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to remove alert"),
+  });
+
+  const toggleSearchMut = useMutation({
+    mutationFn: (id: string) => runToggleSearch({ data: { id } }),
+    onSuccess: async () => {
+      const res = await runListSearches({ data: undefined as any });
+      setSavedSearches(res.searches ?? []);
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to update alert"),
+  });
+
+  const refreshSearchMut = useMutation({
+    mutationFn: (id: string) => runRefreshSearch({ data: { id } }),
+    onSuccess: (res) => {
+      if (res.newJobs && res.newJobs.length > 0) {
+        setJobs(res.newJobs);
+        setTab("search");
+        toast.success(`Found ${res.newJobs.length} new match${res.newJobs.length === 1 ? "" : "es"}`);
+      } else {
+        toast.info("No new matches right now.");
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "Refresh failed"),
   });
 
   const searchMut = useMutation({

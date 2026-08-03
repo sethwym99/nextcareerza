@@ -3,6 +3,9 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getGateway } from "./ai-gateway.server";
+import { searchJobsForQuery, type JobHit } from "./smart-apply-search";
+
+export type { JobHit } from "./smart-apply-search";
 
 const MODEL = "google/gemini-3-flash-preview";
 
@@ -42,32 +45,6 @@ export const saveBaseCv = createServerFn({ method: "POST" })
   });
 
 // ---------- Job search via Firecrawl ----------
-export type JobHit = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  url: string;
-  snippet: string;
-  source: string;
-};
-
-function hostnameOf(u: string) {
-  try {
-    return new URL(u).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
-
-function splitTitleCompany(raw: string, host: string): { title: string; company: string } {
-  // Common patterns: "Frontend Developer at Acme - Remote | LinkedIn"
-  const cleaned = raw.replace(/\s+\|\s+(LinkedIn|Indeed|Glassdoor|Greenhouse|Lever|Workable).*$/i, "").trim();
-  let m = cleaned.match(/^(.+?)\s+(?:at|@|-|—|·|\|)\s+(.+?)(?:\s+(?:in|-|—|·|\|)\s+.+)?$/i);
-  if (m) return { title: m[1].trim(), company: m[2].trim() };
-  return { title: cleaned, company: host.split(".")[0] || "Unknown" };
-}
-
 export const searchJobs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -81,53 +58,11 @@ export const searchJobs = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await enforcePremium(context.supabase, context.userId);
-
-    const apiKey = process.env.FIRECRAWL_API_KEY;
-    if (!apiKey) throw new Error("Job search isn't configured. Please contact support.");
-
-    const parts = [data.seniority, data.role, "jobs"];
-    if (data.location) parts.push(`in ${data.location}`);
-    const query = `${parts.filter(Boolean).join(" ")} site:linkedin.com/jobs OR site:indeed.com OR site:greenhouse.io OR site:lever.co OR site:workable.com OR site:glassdoor.com`;
-
-    const res = await fetch("https://api.firecrawl.dev/v2/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        limit: 20,
-        tbs: "qdr:m",
-      }),
+    const jobs = await searchJobsForQuery({
+      role: data.role,
+      location: data.location,
+      seniority: data.seniority,
     });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      if (res.status === 402) throw new Error("Job search quota exhausted. Please try again later.");
-      throw new Error(`Job search failed (${res.status}). ${txt.slice(0, 200)}`);
-    }
-
-    const json: any = await res.json().catch(() => ({}));
-    const raw: any[] = json?.data?.web ?? json?.data ?? json?.web ?? [];
-
-    const jobs: JobHit[] = raw
-      .filter((r) => r?.url && r?.title)
-      .slice(0, 20)
-      .map((r, i) => {
-        const host = hostnameOf(r.url);
-        const { title, company } = splitTitleCompany(String(r.title), host);
-        return {
-          id: `${i}-${r.url}`,
-          title,
-          company,
-          location: data.location || "",
-          url: r.url,
-          snippet: String(r.description || r.snippet || "").slice(0, 600),
-          source: host,
-        };
-      });
-
     return { jobs };
   });
 
@@ -293,6 +228,7 @@ const packSchema = z.object({
   recommendations: z.array(z.string()).default([]),
   tailoredCv: z.string().min(50),
   coverLetter: z.string().min(50),
+  outreachEmail: z.string().min(50).default(""),
   salary: z.object({
     low: z.number().default(0),
     high: z.number().default(0),
@@ -353,8 +289,8 @@ export const tailorForJob = createServerFn({ method: "POST" })
         model: gateway(MODEL),
         schema: packSchema,
         maxRetries: 2,
-        system:
-          "You are a senior career coach. Tailor the candidate's CV to the job (ATS-friendly, ~400-600 words with sections Summary, Experience, Skills, Education). Write a strong, specific 250-320 word cover letter addressed to the company. Give an honest matchScore (0-100), matched & missing skills, and a realistic salary range based on role, location, and seniority. Always fill every field of the schema — never leave arrays or strings blank; if unsure, infer sensibly.",
+      system:
+        "You are a senior career coach. Tailor the candidate's CV to the job (ATS-friendly, ~400-600 words with sections Summary, Experience, Skills, Education). Write a strong, specific 250-320 word cover letter addressed to the company. Also write a short, polite recruiter outreach email (100-160 words) expressing interest, mentioning 1-2 relevant strengths, and asking about next steps. Give an honest matchScore (0-100), matched & missing skills, and a realistic salary range based on role, location, and seniority. Always fill every field of the schema — never leave arrays or strings blank; if unsure, infer sensibly.",
         prompt: `JOB:\nCompany: ${data.company}\nRole: ${data.jobTitle}\nLocation: ${data.location}\n\nJob description:\n${jobBody}\n\nCANDIDATE CV:\n${data.cvText.slice(0, 12000)}`,
       });
       pack = object;

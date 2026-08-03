@@ -5,7 +5,7 @@ import { getUsageStatus } from "@/lib/ai.functions";
 import { getProfile } from "@/lib/profile.functions";
 import {
   FileText, MessageSquare, Target, Mic, Map as MapIcon, ListChecks,
-  Crown, Sparkles, Wand2, CheckCircle2, Circle, ArrowRight,
+  Crown, Sparkles, Wand2, CheckCircle2, Circle, ArrowRight, BarChart3,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -21,6 +21,7 @@ const apps = [
   { to: "/interview" as const, label: "Interview", icon: Mic, color: "from-rose-500 to-pink-600" },
   { to: "/roadmap" as const, label: "Roadmap", icon: MapIcon, color: "from-violet-500 to-fuchsia-600", premium: true },
   { to: "/tracker" as const, label: "Tracker", icon: ListChecks, color: "from-cyan-500 to-blue-600" },
+  { to: "/analytics" as const, label: "Analytics", icon: BarChart3, color: "from-lime-500 to-emerald-600" },
   { to: "/upgrade" as const, label: "Upgrade", icon: Crown, color: "from-yellow-400 to-amber-600" },
 ];
 
