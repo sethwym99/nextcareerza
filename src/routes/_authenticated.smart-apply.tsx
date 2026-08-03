@@ -89,6 +89,7 @@ function Page() {
   const runRefreshSearch = useServerFn(runJobSearchAlert);
   const runGetPendingAlerts = useServerFn(getPendingJobAlerts);
   const runMarkNotified = useServerFn(markJobAlertsNotified);
+  const runTrackApplication = useServerFn(trackApplication);
 
   const { data: cvData } = useQuery({
     queryKey: ["base-cv"],
