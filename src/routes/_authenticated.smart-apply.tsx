@@ -360,6 +360,25 @@ function Page() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const trackMut = useMutation({
+    mutationFn: async () => {
+      if (!selected) throw new Error("Select a job first");
+      return runTrackApplication({
+        data: {
+          jobUrl: selected.url,
+          company: selected.company,
+          role: selected.title,
+          location: selected.location,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Added to tracker");
+      qc.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to track"),
+  });
+
   const canSearch = role.trim().length > 1 && !searchMut.isPending;
 
   function pick(job: JobHit) {
