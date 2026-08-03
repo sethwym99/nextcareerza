@@ -656,6 +656,8 @@ function Page() {
               result={result}
               onSave={() => saveMut.mutate()}
               saving={saveMut.isPending}
+              onTrack={() => trackMut.mutate()}
+              tracking={trackMut.isPending}
             />
           )}
         </div>
